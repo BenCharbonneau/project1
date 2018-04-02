@@ -341,7 +341,9 @@ class Monster {
 	}
 	move() {
 		if (this.dead) return;
+		
 		ctx.clearRect(0,0,canvas.width,canvas.height);
+		if (game.over) return gameOver();
 		//ctx.clearRect(this.x1-1,this.y1-1,this.width+2,this.height+2);
 		let player = this.calcNearPlayer();
 		let coll = {};
@@ -484,7 +486,7 @@ class Monster {
 
 			this.dead = true;
 			if (game.monsters.length === 0) {
-				console.log("You win!");
+				winGame();
 			}
 		}
 	}
@@ -588,9 +590,23 @@ function moveAround(dir,axis,obj1,obj2,player) {
 }
 
 function gameOver() {
-	ctx.beginPath();
+	ctx.closePath();
 	ctx.clearRect(0,0,canvas.width,canvas.height);
-	console.log("Gameover");
+	game.over = true;
+	ctx.beginPath();
+	ctx.fillStyle = "#000000";
+	ctx.font = "30px Georgia";
+	ctx.fillText("Gameover",270,300);
+}
+
+function winGame() {
+	ctx.closePath();
+	ctx.clearRect(0,0,canvas.width,canvas.height);
+	game.over = true;
+	ctx.beginPath();
+	ctx.fillStyle = "#000000";
+	ctx.font = "30px Georgia";
+	ctx.fillText("You win!",270,300);
 }
 
 const game = {
