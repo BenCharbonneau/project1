@@ -39,17 +39,23 @@ class Player {
 		this.y1 = y1;
 		this.x2 = width+x1;
 		this.y2 = height+y1;
-		this.dir = "right";
+		this.dir = null;
 		this.speed = 6;
 	}
 	move(keyCode) {
 		//ctx.clearRect(this.x1-0.5,this.y1-0.5,this.width+1,this.height+1);
 		let coll = {};
 
+		if (keyCode === null) {
+			return
+			//this.draw();
+		}
+
 		if (keyCode === "right") {
 			this.x1+=this.speed;
 			this.x2+=this.speed;
 			this.dir = "right";
+			this.weapon.dir = "right";
 
 			coll = game.checkCollision(this);
 			
@@ -61,11 +67,21 @@ class Player {
 				this.x1=coll.x1-this.width;
 				this.x2=coll.x1;
 			}
+
+			if (this.x1 < 0) {
+				this.x1 = 0;
+				this.x2 = this.width;
+			}
+			if (this.x2 > canvas.width) {
+				this.x2 = canvas.width;
+				this.x1 = canvas.width - this.width;
+			}
 		}
 		if (keyCode === "left") {
 			this.x1-=this.speed;
 			this.x2-=this.speed;
 			this.dir = "left";
+			this.weapon.dir = "left";
 		
 			coll = game.checkCollision(this);
 			
@@ -76,11 +92,21 @@ class Player {
 				this.x1=coll.x2;
 				this.x2=coll.x2+this.width;
 			}
+
+			if (this.x1 < 0) {
+				this.x1 = 0;
+				this.x2 = this.width;
+			}
+			if (this.x2 > canvas.width) {
+				this.x2 = canvas.width;
+				this.x1 = canvas.width - this.width;
+			}
 		}
 		else if (keyCode === "down") {
 			this.y1+=this.speed;
 			this.y2+=this.speed;
 			this.dir = "down";
+			this.weapon.dir = "down";
 
 			coll = game.checkCollision(this);
 				
@@ -91,11 +117,21 @@ class Player {
 				this.y1=coll.y1-this.height;
 				this.y2=coll.y1;
 			}
+
+			if (this.y1 < 0) {
+				this.y1 = 0;
+				this.y2 = this.height;
+			}
+			if (this.y2 > canvas.height) {
+				this.y2 = canvas.height;
+				this.y1 = canvas.height - this.height;
+			}
 		}
 		else if (keyCode === "up") {
 			this.y1-=this.speed;
 			this.y2-=this.speed;
 			this.dir = "up";
+			this.weapon.dir = "up";
 			coll = game.checkCollision(this);
 			
 			if (coll) {
@@ -105,6 +141,16 @@ class Player {
 				this.y1=coll.y2;
 				this.y2=coll.y2+this.height;
 			}
+
+			if (this.y1 < 0) {
+				this.y1 = 0;
+				this.y2 = this.height;
+			}
+			if (this.y2 > canvas.height) {
+				this.y2 = canvas.height;
+				this.y1 = canvas.height - this.height;
+			}
+
 		}
 
 		//this.draw();
@@ -121,19 +167,19 @@ class Player {
 		this.weapon.draw();
 	}
 	upWeapDir() {
-		if (this.dir === "right") {
+		if (this.weapon.dir === "right") {
 			this.weapon.x1 = this.x2 - this.weapon.length/2;
 			this.weapon.y1 = this.y2;
 			this.weapon.x2 = this.x2 + this.weapon.length/2;
 			this.weapon.y2 = this.y2;
 		}
-		else if (this.dir === "left") {
+		else if (this.weapon.dir === "left") {
 			this.weapon.x1 = this.x1 - this.weapon.length/2;
 			this.weapon.y1 = this.y1;
 			this.weapon.x2 = this.x1 + this.weapon.length/2;
 			this.weapon.y2 = this.y1;
 		}
-		else if (this.dir === "up") {
+		else if (this.weapon.dir === "up") {
 			this.weapon.x1 = this.x2;
 			this.weapon.y1 = this.y1 - this.weapon.length/2;
 			this.weapon.x2 = this.x2;
@@ -152,6 +198,7 @@ class Weapon {
 	constructor(damage) {
 		this.damage = damage;
 		this.length = 5;
+		this.dir = "right";
 	}
 	draw() {
 		ctx.beginPath()
@@ -169,6 +216,106 @@ class Weapon {
 		ctx.stroke();
 		ctx.closePath();
 	}
+	fire() {
+		if (this.dir === "right") {
+			new Bullet(this.x2,this.y1,"right");
+		}
+		else if (this.dir === "left") {
+			new Bullet((this.x1-1),this.y1,"left");
+		}
+		else if (this.dir === "up") {
+			new Bullet(this.x1,(this.y1-1),"up");
+		}
+		else {
+			new Bullet(this.x2,this.y2,"down");
+		}
+	}
+}
+
+class Bullet {
+	constructor(x1,y1,dir) {
+		this.x1 = x1;
+		this.x2 = x1+1;
+		this.y1 = y1;
+		this.y2 = y1 + 1;
+		this.dir = dir;
+		this.speed = 10;
+		this.type = "bullet";
+		game.bullets.push(this);
+		requestAnimationFrame(this.move.bind(this));
+	}
+	move() {
+		let coll = {};
+		if (this.dir === "right") {
+			this.x1+=this.speed;
+			this.x2+=this.speed;
+
+			coll = game.checkCollision(this);
+			
+			if (coll || this.x1 < 0 || this.x2 > canvas.width) {
+				if (coll && coll.type === "monster") {
+					coll.takeDamage();
+				}
+				this.remove();
+				return;
+			}
+		}
+		if (this.dir === "left") {
+			this.x1-=this.speed;
+			this.x2-=this.speed;
+		
+			coll = game.checkCollision(this);
+			
+			if (coll || this.x1 < 0 || this.x2 > canvas.width) {
+				if (coll && coll.type === "monster") {
+					coll.takeDamage();
+				}
+				this.remove();
+				return;
+			}
+		}
+		else if (this.dir === "down") {
+			this.y1+=this.speed;
+			this.y2+=this.speed;
+
+			coll = game.checkCollision(this);
+				
+			if (coll || this.y1 < 0 || this.y2 > canvas.height) {
+				if (coll && coll.type === "monster") {
+					coll.takeDamage();
+				}
+				this.remove();
+				return;
+			}
+		}
+		else if (this.dir === "up") {
+			this.y1-=this.speed;
+			this.y2-=this.speed;
+
+			coll = game.checkCollision(this);
+			
+			if (coll || this.y1 < 0 || this.y2 > canvas.height) {
+				if (coll && coll.type === "monster") {
+					coll.takeDamage();
+				}
+				this.remove();
+				return;
+			}
+		}
+		requestAnimationFrame(this.move.bind(this));
+	}
+	draw() {
+		ctx.beginPath()
+		ctx.rect(this.x1,this.y1,1,1);
+		ctx.fillStyle = "#000";
+		ctx.fill();
+	}
+	remove() {
+		let index = game.bullets.indexOf(this);
+		game.bullets = game.bullets.filter(((elem) => {
+			if (elem !== this) return true;
+		}).bind(this));
+	}
 }
 
 class Wall {
@@ -181,7 +328,7 @@ class Wall {
 }
 
 class Monster {
-	constructor(speed,x1,y1,width,height) {
+	constructor(speed,x1,y1,width,height,hits) {
 		this.type = "monster";
 		this.speed = 0.5;
 		this.x1 = x1;
@@ -190,8 +337,10 @@ class Monster {
 		this.width = width;
 		this.x2 = x1 + width;
 		this.y2 = y1 + height;
+		this.hits = hits;
 	}
 	move() {
+		if (this.dead) return;
 		ctx.clearRect(0,0,canvas.width,canvas.height);
 		//ctx.clearRect(this.x1-1,this.y1-1,this.width+2,this.height+2);
 		let player = this.calcNearPlayer();
@@ -213,15 +362,20 @@ class Monster {
 				return gameOver();
 			}
 			if (coll) {
+				if (coll.type === "bullet") {
+					this.takeDamage();
+					coll.remove();
+				}
 				//undoing move
-				this.x1-=this.speed;
-				this.x2-=this.speed;
+				else {
+					this.x1-=this.speed;
+					this.x2-=this.speed;
 				
-				axis = "y";
-				avObj = coll;
+					axis = "y";
+					avObj = coll;
+				}
 			}
 		}
-		//else if (this.x1 > player.x1) {
 		else {
 			this.x1-=this.speed;
 			this.x2-=this.speed;
@@ -231,11 +385,17 @@ class Monster {
 				return gameOver();
 			}
 			if (coll) {
-				this.x1+=this.speed;
-				this.x2+=this.speed;
+				if (coll.type === "bullet") {
+					this.takeDamage();
+					coll.remove();
+				}
+				else {
+					this.x1+=this.speed;
+					this.x2+=this.speed;
 
-				axis = "y";
-				avObj = coll;
+					axis = "y";
+					avObj = coll;
+				}
 			}
 		}
 
@@ -249,10 +409,16 @@ class Monster {
 					return gameOver();
 				}
 				if (coll) {
-					this.y1-=this.speed;
-					this.y2-=this.speed;
-					axis = "x";
-					avObj = coll;
+					if (coll.type === "bullet") {
+						this.takeDamage();
+						coll.remove();
+					}
+					else {
+						this.y1-=this.speed;
+						this.y2-=this.speed;
+						axis = "x";
+						avObj = coll;
+					}
 				}
 			}
 			else {
@@ -264,10 +430,16 @@ class Monster {
 					return gameOver();
 				}
 				if (coll) {
-					this.y1+=this.speed;
-					this.y2+=this.speed;
-					axis = "x";
-					avObj = coll;
+					if (coll.type === "bullet") {
+						this.takeDamage();
+						coll.remove();
+					}
+					else {
+						this.y1+=this.speed;
+						this.y2+=this.speed;
+						axis = "x";
+						avObj = coll;
+					}
 				}
 			}
 		}
@@ -300,6 +472,21 @@ class Monster {
 		}
 
 		return nearPlayer;
+	}
+	takeDamage() {
+		this.hits--;
+		if (this.hits <= 0) {
+			let index = game.monsters.indexOf(this);
+
+			game.monsters = game.monsters.filter(((elem) => {
+				if (elem !== this) return true;
+			}).bind(this));
+
+			this.dead = true;
+			if (game.monsters.length === 0) {
+				console.log("You win!");
+			}
+		}
 	}
 }
 
@@ -408,25 +595,25 @@ function gameOver() {
 
 const game = {
 	monsters: [],
-	mHeight: 10,
-	mWidth: 10,
+	mHeight: 12,
+	mWidth: 12,
 	objects: [],
 	players: [],
+	bullets: [],
+	hits: 2,
 	generateMonsters(amount,speed) {
 		let h = this.mHeight;
 		let w = this.mWidth;
 		let monster = {};
 		for (let i = 1; i <= amount; i++) {
-			monster = new Monster(speed,(canvas.width - w*2),(canvas.height/(amount+1)*i - h/2),w,h);
+			monster = new Monster(speed,(canvas.width - w*2),(canvas.height/(amount+1)*i - h/2),w,h,this.hits);
 			this.monsters.push(monster);
-			//monster.draw();
 			requestAnimationFrame(monster.move.bind(monster));
 		}
 	},
 	generatePlayers(amount) {
 		for (let i = 0; i < amount; i++) {
 			this.players.push(new Player((i+1),10,(canvas.height/(amount+1)*(i+1)-5),10,10));
-			//this.players[i].draw();
 		}		
 	},
 	checkCollision(obj) {
@@ -445,6 +632,11 @@ const game = {
 				return monster;
 			}
 		}
+		for (let bullet of this.bullets) {
+			if (isInside(bullet,obj)) {
+				return bullet;
+			}
+		}
 		return null;
 	},
 	draw() {
@@ -454,6 +646,9 @@ const game = {
 		}
 		for (let monster of this.monsters) {
 			monster.draw();
+		}
+		for (let bullet of this.bullets) {
+			bullet.draw();
 		}
 	},
 	drawMap() {
@@ -506,7 +701,7 @@ const game = {
 
 game.generatePlayers(2)
 
-game.generateMonsters(1,1);
+game.generateMonsters(2,1);
 
 game.drawMap();
 
@@ -514,32 +709,73 @@ $('body').on('keydown',(e) => {
 	let key = e.keyCode;
 	if (key === 87) {
 		game.players[1].move("up");
+		game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 83) {
 		game.players[1].move("down");
+		game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 65) {
 		game.players[1].move("left");
+		game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 68) {
 		game.players[1].move("right");
+		game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 38) {
 		game.players[0].move("up");
+		game.players[1].move(game.players[1].dir);
 	}
 	else if (key === 40) {
 		game.players[0].move("down");
+		game.players[1].move(game.players[1].dir);
 	}
 	else if (key === 37) {
 		game.players[0].move("left");
+		game.players[1].move(game.players[1].dir);
 	}
 	else if (key === 39) {
 		game.players[0].move("right");
+		game.players[1].move(game.players[1].dir);
+	}
+	else if (key === 13) {
+		game.players[0].weapon.fire();
+	}
+	else if (key === 192) {
+		game.players[1].weapon.fire();
 	}
 
 })
 
+$('body').on('keyup',(e) => {
+	let key = e.keyCode;
+	if (key === 87) {
+		game.players[1].dir = null;
+	}
+	else if (key === 83) {
+		game.players[1].dir = null;
+	}
+	else if (key === 65) {
+		game.players[1].dir = null;
+	}
+	else if (key === 68) {
+		game.players[1].dir = null;
+	}
+	else if (key === 38) {
+		game.players[0].dir = null;
+	}
+	else if (key === 40) {
+		game.players[0].dir = null;
+	}
+	else if (key === 37) {
+		game.players[0].dir = null;
+	}
+	else if (key === 39) {
+		game.players[0].dir = null;
+	}
 
+})
 
 
 
