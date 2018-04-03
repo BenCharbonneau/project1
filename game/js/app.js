@@ -11,7 +11,7 @@ const game = {
 	monsters: [],
 	mHeight: 12,
 	mWidth: 12,
-	mhits: 2,
+	mhits: 2,      //monster hit points
 	mspeed: 0.5,
 	objects: [],   //walls and columns
 	players: [],
@@ -93,22 +93,26 @@ const game = {
 		}
 	},
 	move() {
+		//clear the canvas
 		ctx.clearRect(0,0,canvas.width,canvas.height);
 
+		//the player won if all of the monsters are dead
 		if (this.monsters.length === 0) return winGame();
 
+		//end the game if the players lost
 		if (this.over) return gameOver();
 
-		//draw the monsters
+		//move the monsters
 		for (let monster of this.monsters) {
 			monster.move();
 		}
 
-		//draw bullets that have been fired
+		//move bullets that have been fired
 		for (let bullet of this.bullets) {
 			bullet.move();
 		}
 
+		//redraw everything
 		this.draw();
 
 		requestAnimationFrame(this.move.bind(this));
@@ -216,7 +220,8 @@ class Player {
 			if (coll) {
 				//if they collided with a monster, then game over
 				if (coll.type === "monster") {
-					return gameOver();
+					game.over = true;
+					return;
 				}
 				this.x1=coll.x1-this.width;
 				this.x2=coll.x1;
@@ -242,7 +247,8 @@ class Player {
 			
 			if (coll) {
 				if (coll.type === "monster") {
-					return gameOver();
+					game.over = true;
+					return;
 				}
 				this.x1=coll.x2;
 				this.x2=coll.x2+this.width;
@@ -267,7 +273,8 @@ class Player {
 				
 			if (coll) {
 				if (coll.type === "monster") {
-					return gameOver();
+					game.over = true;
+					return;
 				}
 				this.y1=coll.y1-this.height;
 				this.y2=coll.y1;
@@ -291,7 +298,8 @@ class Player {
 			
 			if (coll) {
 				if (coll.type === "monster") {
-					return gameOver();
+					game.over = true;
+					return;
 				}
 				this.y1=coll.y2;
 				this.y2=coll.y2+this.height;
@@ -417,8 +425,6 @@ class Bullet {
 
 		//add the bullet to the game
 		game.bullets.push(this);
-		//start moving the bullet
-		//requestAnimationFrame(this.move.bind(this));
 	}
 	move() {
 		let coll = {};
@@ -487,8 +493,6 @@ class Bullet {
 				return;
 			}
 		}
-		//nothing was hit, continue moving the bullet
-		//requestAnimationFrame(this.move.bind(this));
 	}
 	draw() {
 		//draw the bullet
@@ -540,24 +544,16 @@ class Monster {
 
 		//if this zombie is dead, stop moving it
 		if (this.dead) return;
-		
-		//ctx.clearRect(0,0,canvas.width,canvas.height);
-		//if (game.over) return gameOver();
 
+		//determine which player is nearest to the monster
 		let player = this.calcNearPlayer();
+
+		//initialize variables
 		let coll = {};
 		let avObj = {};
 		let dir = "";
 		let axis = "";
 
-		//console.log(this,player);
-		if (game.checkCollision(this) === player) {
-			//return gameOver();
-			game.over = true;
-			return;
-		}
-
-		//if (this.x2 < (player.x2 - (this.width - player.width)) && this.x1 < (player.x1 + (this.width - player.width))) {
 		if (this.x2 < player.x2) {
 			this.x1+=this.speed;
 			this.x2+=this.speed;
@@ -566,7 +562,6 @@ class Monster {
 			if (coll === player) {
 				game.over = true;
 				return;
-				//return gameOver();
 			}
 			if (coll) {
 				
@@ -586,14 +581,12 @@ class Monster {
 				}
 			}
 		}
-		//else if (this.x2 > (player.x2 + (this.width - player.width)) && this.x1 > player.x1 {
 		else if (this.x1 > player.x1) {
 			this.x1-=this.speed;
 			this.x2-=this.speed;
 			dir += "left";
 			coll = game.checkCollision(this);
 			if (coll === player) {
-				//return gameOver();
 				game.over = true;
 				return;
 			}
@@ -615,14 +608,12 @@ class Monster {
 		}
 
 		if (!axis) {
-			//if (this.y1 < (player.y1 + (this.width - player.width)) && this.y2 < (player.y2 - (this.width - player.width))) {
 			if (this.y2 < player.y2) {
 				this.y1+=this.speed;
 				this.y2+=this.speed;
 				dir += " down";
 				coll = game.checkCollision(this);
 				if (coll === player) {
-					//return gameOver();
 					game.over = true;
 					return;
 				}
@@ -641,14 +632,12 @@ class Monster {
 					}
 				}
 			}
-			//else {
 			else if (this.y1 > player.y1) {
 				this.y1-=this.speed;
 				this.y2-=this.speed;
 				dir += " up";
 				coll = game.checkCollision(this);
 				if (coll === player) {
-					//return gameOver();
 					game.over = true;
 					return;
 				}
@@ -667,17 +656,15 @@ class Monster {
 					}
 				}
 			}
+			//try to move around the object that's in the way
 			if (axis) {
 				moveAround(dir,axis,this,avObj,player);
 			}
 		}
-		//trying to move around object
+		//try to move around the object that's in the way
 		else {
 			moveAround(dir,axis,this,avObj,player);
 		}
-
-		//game.draw();
-		//requestAnimationFrame(this.move.bind(this));
 	}
 	draw() {
 		ctx.beginPath()
@@ -709,9 +696,6 @@ class Monster {
 			}).bind(this));
 
 			this.dead = true;
-			// if (game.monsters.length === 0) {
-			// 	winGame();
-			// }
 		}
 	}
 }
@@ -722,20 +706,15 @@ class Monster {
 
 
 function shortestDist(obj1,obj2,axis,player,dir) {
-	//console.log(obj2);
 	if (axis === "y") {
 		if ((obj2.y1 < player.y1 && obj2.y2 > player.y1) || (obj2.y1 < player.y2 && obj2.y2 > player.y2)) {
 			return "up";
 		}
-		// if (Math.abs(obj2.y1 - obj1.y2) < Math.abs(obj2.y2 - obj1.y1)) {
-		// 	return "up";
-		// }
+
 		if (player.y1 < obj2.y1) {
-			//console.log("up",obj1.y1,obj1);
 			return "up";
 		}
 		else {
-			//console.log("down",obj1.y1,obj1);
 			return "down";
 		}
 	}
@@ -743,15 +722,10 @@ function shortestDist(obj1,obj2,axis,player,dir) {
 		if ((obj2.x1 > player.x1 && obj2.x2 < player.x1) || (obj2.x1 < player.x2 && obj2.x2 > player.x2)) {
 			return "left";
 		}
-		// // if (Math.abs(obj2.x1 - obj1.x2) < Math.abs(obj1.x1 - obj2.x2)) {
-		// // 	return "left";
-		// // }
 		if(player.x1 < obj2.x1) {
-			//console.log("left",obj1.x1,obj1);
 			return "left";
 		}
 		else {
-			//console.log("right",obj1.x1,obj1);
 			return "right";
 		}
 	}
@@ -788,7 +762,6 @@ function moveAround(dir,axis,obj1,obj2,player) {
 	//obj1 is this
 	dir = dir.split(' ');
 	shrtDis = shortestDist(obj1,obj2,axis,player,dir);
-	//console.log(shrtDis,obj1,obj2,player,dir);
 	
 	if (axis === "y") {
 		if (dir[1] === "up") {
@@ -837,7 +810,6 @@ function moveAround(dir,axis,obj1,obj2,player) {
 }
 
 function gameOver() {
-	//console.log("Here");
 	ctx.closePath();
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 	game.over = true;
@@ -983,33 +955,6 @@ function calcHyp(x1,y1,width,height,player) {
 
 	return Math.sqrt(Math.pow(Math.abs(cX - pCX),2)+Math.pow(Math.abs(cY - pCY),2));
 
-}
-
-function isEmpty(obj) {
-	// Speed up calls to hasOwnProperty
-	let hasOwnProperty = Object.prototype.hasOwnProperty;
-
-    // null and undefined are "empty"
-    if (obj == null) return true;
-
-    // Assume if it has a length property with a non-zero value
-    // that that property is correct.
-    if (obj.length > 0)    return false;
-    if (obj.length === 0)  return true;
-
-    // If it isn't an object at this point
-    // it is empty, but it can't be anything *but* empty
-    // Is it empty?  Depends on your application.
-    if (typeof obj !== "object") return true;
-
-    // Otherwise, does it have any properties of its own?
-    // Note that this doesn't handle
-    // toString and valueOf enumeration bugs in IE < 9
-    for (var key in obj) {
-        if (hasOwnProperty.call(obj, key)) return false;
-    }
-
-    return true;
 }
 
 

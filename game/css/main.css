@@ -2,3 +2,21 @@
 	border: 2px solid black;
 	background-color:#DDDDDD;
 }
+
+#container {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+}
+
+header {
+	margin: 0 auto;
+	width: 654px;
+	background-color: blue; 
+}
+
+h1 {
+	margin: 1px auto;
+	text-align: center;
+	font-size: 24px;
+}
