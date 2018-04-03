@@ -439,6 +439,8 @@ class Wall {
 		this.y1 = y1;
 		this.x2 = x2;
 		this.y2 = y2;
+		this.width = this.x2 - this.x1;
+		this.height = this.y2 - this.y1;
 	}
 }
 
@@ -467,12 +469,13 @@ class Monster {
 		let dir = "";
 		let axis = "";
 
+		console.log(this,player);
 		if (game.checkCollision(this) === player) {
 			return gameOver();
 		}
 
-		//if (this.x1 < player.x1 && this.x1 < player.x2) {
-		if (this.x2 <= player.x1) {
+		//if (this.x2 < (player.x2 - (this.width - player.width)) && this.x1 < (player.x1 + (this.width - player.width))) {
+		if (this.x2 < player.x2) {
 			this.x1+=this.speed;
 			this.x2+=this.speed;
 			dir += "right";
@@ -498,8 +501,8 @@ class Monster {
 				}
 			}
 		}
-		//else {
-		else if (this.x1 >= player.x2) {
+		//else if (this.x2 > (player.x2 + (this.width - player.width)) && this.x1 > player.x1 {
+		else if (this.x1 > player.x1) {
 			this.x1-=this.speed;
 			this.x2-=this.speed;
 			dir += "left";
@@ -525,8 +528,8 @@ class Monster {
 		}
 
 		if (!axis) {
-			//if (this.y1 < player.y1 && this.y1 < player.y2) {
-			if (this.y2 <= player.y1) {
+			//if (this.y1 < (player.y1 + (this.width - player.width)) && this.y2 < (player.y2 - (this.width - player.width))) {
+			if (this.y2 < player.y2) {
 				this.y1+=this.speed;
 				this.y2+=this.speed;
 				dir += " down";
@@ -550,7 +553,7 @@ class Monster {
 				}
 			}
 			//else {
-			else if (this.y1 >= player.y2) {
+			else if (this.y1 > player.y1) {
 				this.y1-=this.speed;
 				this.y2-=this.speed;
 				dir += " up";
@@ -632,7 +635,6 @@ function shortestDist(obj1,obj2,axis,player,dir) {
 	//console.log(obj2);
 	if (axis === "y") {
 		if ((obj2.y1 < player.y1 && obj2.y2 > player.y1) || (obj2.y1 < player.y2 && obj2.y2 > player.y2)) {
-			console.log("Here 1");
 			return "up";
 		}
 		// if (Math.abs(obj2.y1 - obj1.y2) < Math.abs(obj2.y2 - obj1.y1)) {
@@ -640,7 +642,6 @@ function shortestDist(obj1,obj2,axis,player,dir) {
 		// }
 		if (player.y1 < obj2.y1) {
 			//console.log("up",obj1.y1,obj1);
-			console.log("Here 2");
 			return "up";
 		}
 		else {
@@ -668,19 +669,25 @@ function shortestDist(obj1,obj2,axis,player,dir) {
 
 function isInside(obj1,obj2) {
 	if (obj1 !== obj2) {
-		if (obj1.x1 > obj2.x1 && obj1.x1 < obj2.x2) {
-			if (obj1.y1 > obj2.y1 && obj1.y1 < obj2.y2) {
+
+		let wD = (obj1.width - obj2.width)/2;
+		if (wD < 0) {
+			wD = 0;
+		}
+
+		if (obj1.x1 > (obj2.x1 - wD) && obj1.x1 < (obj2.x2 + wD)) {
+			if (obj1.y1 > (obj2.y1 - wD) && obj1.y1 < (obj2.y2 + wD)) {
 				return true;
 			}
-			if (obj1.y2 > obj2.y1 && obj1.y2 < obj2.y2) {
+			if (obj1.y2 > (obj2.y1 - wD) && obj1.y2 < (obj2.y2 + wD)) {
 				return true;
 			}
 		}
-		if (obj1.x2 > obj2.x1 && obj1.x2 < obj2.x2) {
-			if (obj1.y1 > obj2.y1 && obj1.y1 < obj2.y2) {
+		if (obj1.x2 > (obj2.x1 - wD) && obj1.x2 < (obj2.x2 + wD)) {
+			if (obj1.y1 > (obj2.y1 - wD) && obj1.y1 < (obj2.y2 + wD)) {
 				return true;
 			}
-			if (obj1.y2 > obj2.y1 && obj1.y2 < obj2.y2) {
+			if (obj1.y2 > (obj2.y1 - wD) && obj1.y2 < (obj2.y2 + wD)) {
 				return true;
 			}
 		}
@@ -691,7 +698,7 @@ function moveAround(dir,axis,obj1,obj2,player) {
 	//obj1 is this
 	dir = dir.split(' ');
 	shrtDis = shortestDist(obj1,obj2,axis,player,dir);
-	console.log(shrtDis,obj1,obj2,player,dir);
+	//console.log(shrtDis,obj1,obj2,player,dir);
 	
 	if (axis === "y") {
 		if (dir[1] === "up") {
