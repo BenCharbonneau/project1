@@ -29,8 +29,12 @@ const game = {
 			//hits - hit points for the monster
 			monster = new Monster((i-1),this.mspeed,(canvas.width - w*2),(canvas.height/(amount+1)*i - h/2),w,h,this.mhits);
 			this.monsters.push(monster);
-			requestAnimationFrame(monster.move.bind(monster));
+
+			//Start moving the monsters
+			//each of the monsters will clear out the canvas and then redraw it when they are done moving
+			//requestAnimationFrame(monster.move.bind(monster));
 		}
+		requestAnimationFrame(this.move.bind(this));
 	},
 	generatePlayers(amount) {
 		for (let i = 0; i < amount; i++) {
@@ -88,6 +92,27 @@ const game = {
 			bullet.draw();
 		}
 	},
+	move() {
+		ctx.clearRect(0,0,canvas.width,canvas.height);
+
+		if (this.monsters.length === 0) return winGame();
+
+		if (this.over) return gameOver();
+
+		//draw the monsters
+		for (let monster of this.monsters) {
+			monster.move();
+		}
+
+		//draw bullets that have been fired
+		for (let bullet of this.bullets) {
+			bullet.move();
+		}
+
+		this.draw();
+
+		requestAnimationFrame(this.move.bind(this));
+	},
 	drawMap() {
 		ctx.beginPath();
 		ctx.strokeStyle = "#000000";
@@ -114,12 +139,18 @@ const game = {
 		let back = false;
 		let offset = 0;
 		let radius = 10;
+		//the number of rows of columns
+		let numCol = 7;
+		//the large diamond will have its top point at some height
 		let yBegin = rectToWall*3;
+		//the large diamond will have its bottom point at some height
 		let yEnd = rectToWall*10;
-		let yIter = (yEnd - yBegin)/6;
+		//this will be the distance between rows
+		let yIter = (yEnd - yBegin)/(numCol-1);
 
 		for (let y = yBegin; y <= yEnd; y += yIter) {
-			if (num === 4) {
+			//y from the loop picks the row
+			if (num === Math.ceil(numCol/2)) {
 				back = true;
 			}
 
@@ -130,6 +161,7 @@ const game = {
 				num++;
 			}
 
+			//create the columns at evenly spaced x values along the row
 			for (let i = 1; i <= num; i++) {
 
 				x = (canvas.width)/(num+1)*i
@@ -146,6 +178,7 @@ const game = {
 
 class Player {
 	constructor(name,x1,y1,width,height) {
+		//start with a weapon that does 1 damage
 		this.weapon = new Weapon(1);
 		this.name = name;
 		this.width = width;
@@ -158,24 +191,30 @@ class Player {
 		this.speed = 6;
 	}
 	move(keyCode) {
-		//ctx.clearRect(this.x1-0.5,this.y1-0.5,this.width+1,this.height+1);
 		let coll = {};
 
+		//The keyCode will have the direction to go based on the key press
+		
 		if (keyCode === null) {
 			return
-			//this.draw();
 		}
 
+		//moving right. Other keystrokes will be handled similarly
 		if (keyCode === "right") {
+			//move the player
 			this.x1+=this.speed;
 			this.x2+=this.speed;
+
+			//update the player's direction
 			this.dir = "right";
 			this.weapon.dir = "right";
 
+			//check to see if moving caused the player to collide with anything
 			coll = game.checkCollision(this);
 			
+			//if there was a collision, move the player back to the edge of the object they collided with
 			if (coll) {
-				//undoing move
+				//if they collided with a monster, then game over
 				if (coll.type === "monster") {
 					return gameOver();
 				}
@@ -183,6 +222,7 @@ class Player {
 				this.x2=coll.x1;
 			}
 
+			//if they left the screen then move them back inside
 			if (this.x1 < 0) {
 				this.x1 = 0;
 				this.x2 = this.width;
@@ -267,21 +307,33 @@ class Player {
 			}
 
 		}
-
-		//this.draw();
 	}
 	draw() {
-		//this.weapon.clear();
+		//draw the player
+
+		//begin drawing
 		ctx.beginPath();
+
+		//set the color to black
 		ctx.fillStyle = "#000000";
-		//ctx.strokeStyle = "#000000";
+
+		//set the dimensions of the player's rectangle
 		ctx.rect(this.x1,this.y1,this.width,this.height);
+
+		//fill the rectangle
 		ctx.fill();
-		//ctx.stroke();
+
+		//update the player's weapon's location and dimensions
 		this.upWeapDir()
+
+		//draw the weapon
 		this.weapon.draw();
 	}
 	upWeapDir() {
+		//update the direction and location of a weapon in relation to a player
+		//the weapon is a line which is why we have a length instead of a 
+		//width and a height
+
 		if (this.weapon.dir === "right") {
 			this.weapon.x1 = this.x2 - this.weapon.length/2;
 			this.weapon.y1 = this.y2;
@@ -316,63 +368,79 @@ class Weapon {
 		this.dir = "right";
 	}
 	draw() {
+		//draw the weapon
 		ctx.beginPath()
+		//move to the start of the line
 		ctx.moveTo(this.x1,this.y1);
+		//sketch to the second point of the line
 		ctx.lineTo(this.x2,this.y2);
+		//set the color to red
 		ctx.strokeStyle = "#f00";
-		ctx.stroke();
-		ctx.closePath();
-	}
-	clear() {
-		ctx.beginPath()
-		ctx.moveTo(this.x1,this.y1);
-		ctx.lineTo(this.x2,this.y2);
-		ctx.strokeStyle = "#000";
+		//create the line
 		ctx.stroke();
 		ctx.closePath();
 	}
 	fire() {
+		//fire in the direction of the weapon
 		if (this.dir === "right") {
-			new Bullet(this.x2,this.y1,"right");
+			//create a bullet starting at the tip of the weapon
+			//the bullet will have the same damage as the weapon
+			new Bullet(this.x2,this.y1,"right",this.damage);
 		}
 		else if (this.dir === "left") {
-			new Bullet((this.x1-1),this.y1,"left");
+			new Bullet((this.x1-1),this.y1,"left",this.damage);
 		}
 		else if (this.dir === "up") {
-			new Bullet(this.x1,(this.y1-1),"up");
+			new Bullet(this.x1,(this.y1-1),"up",this.damage);
 		}
 		else {
-			new Bullet(this.x2,this.y2,"down");
+			new Bullet(this.x2,this.y2,"down",this.damage);
 		}
 	}
 }
 
 class Bullet {
-	constructor(x1,y1,dir) {
-		this.width = 1;
-		this.height = 1;
+	constructor(x1,y1,dir,damage) {
+		//set size and position
+		this.width = 2;
+		this.height = 2;
 		this.x1 = x1;
 		this.x2 = x1 + this.width;
 		this.y1 = y1;
 		this.y2 = y1 + this.height;
+
 		this.dir = dir;
+		//bullets will move 10 pixels per screen refresh
 		this.speed = 10;
+		this.damage = damage;
 		this.type = "bullet";
+
+		//add the bullet to the game
 		game.bullets.push(this);
-		requestAnimationFrame(this.move.bind(this));
+		//start moving the bullet
+		//requestAnimationFrame(this.move.bind(this));
 	}
 	move() {
 		let coll = {};
+
+		//handle moving right (other directions will be handled similarly)
 		if (this.dir === "right") {
+
+			//move
 			this.x1+=this.speed;
 			this.x2+=this.speed;
 
+			//check for a collision with anything in the game
 			coll = game.checkCollision(this);
-			console.log(this,coll);
+
+			//if there is a collision or the bullet leaves the canvas,
+			//remove the bullet from the game
 			if (coll || this.x1 <= 0 || this.x2 >= canvas.width) {
+				//if it hit a monster, then have the monster take damage
 				if (coll && coll.type === "monster") {
-					coll.takeDamage();
+					coll.takeDamage(this);
 				}
+				//remove the bullet
 				this.remove();
 				return;
 			}
@@ -385,7 +453,7 @@ class Bullet {
 			
 			if (coll || this.x1 <= 0 || this.x2 >= canvas.width) {
 				if (coll && coll.type === "monster") {
-					coll.takeDamage();
+					coll.takeDamage(this);
 				}
 				this.remove();
 				return;
@@ -399,7 +467,7 @@ class Bullet {
 				
 			if (coll || this.y1 <= 0 || this.y2 >= canvas.height) {
 				if (coll && coll.type === "monster") {
-					coll.takeDamage();
+					coll.takeDamage(this);
 				}
 				this.remove();
 				return;
@@ -413,22 +481,25 @@ class Bullet {
 			
 			if (coll || this.y1 <= 0 || this.y2 >= canvas.height) {
 				if (coll && coll.type === "monster") {
-					coll.takeDamage();
+					coll.takeDamage(this);
 				}
 				this.remove();
 				return;
 			}
 		}
-		requestAnimationFrame(this.move.bind(this));
+		//nothing was hit, continue moving the bullet
+		//requestAnimationFrame(this.move.bind(this));
 	}
 	draw() {
+		//draw the bullet
 		ctx.beginPath()
-		ctx.rect(this.x1,this.y1,1,1);
+		ctx.rect(this.x1,this.y1,this.width,this.height);
+		//make it black
 		ctx.fillStyle = "#000";
 		ctx.fill();
 	}
 	remove() {
-		let index = game.bullets.indexOf(this);
+		//remove the bullet from the game's array of bullets
 		game.bullets = game.bullets.filter(((elem) => {
 			if (elem !== this) return true;
 		}).bind(this));
@@ -436,6 +507,8 @@ class Bullet {
 }
 
 class Wall {
+	//create an object representation of each wall and column
+	//that way other objects in the game will have something to check collisions with
 	constructor(x1,y1,x2,y2) {
 		this.x1 = x1;
 		this.y1 = y1;
@@ -451,20 +524,26 @@ class Monster {
 		this.number = number;
 		this.type = "monster";
 		this.speed = speed;
+
+		//set the monster's location
 		this.x1 = x1;
 		this.y1 = y1;
 		this.height = height;
 		this.width = width;
 		this.x2 = x1 + width;
 		this.y2 = y1 + height;
+
+		//amount of damage it can take before dying
 		this.hits = hits;
 	}
 	move() {
+
+		//if this zombie is dead, stop moving it
 		if (this.dead) return;
 		
-		ctx.clearRect(0,0,canvas.width,canvas.height);
-		if (game.over) return gameOver();
-		//ctx.clearRect(this.x1-1,this.y1-1,this.width+2,this.height+2);
+		//ctx.clearRect(0,0,canvas.width,canvas.height);
+		//if (game.over) return gameOver();
+
 		let player = this.calcNearPlayer();
 		let coll = {};
 		let avObj = {};
@@ -473,7 +552,9 @@ class Monster {
 
 		//console.log(this,player);
 		if (game.checkCollision(this) === player) {
-			return gameOver();
+			//return gameOver();
+			game.over = true;
+			return;
 		}
 
 		//if (this.x2 < (player.x2 - (this.width - player.width)) && this.x1 < (player.x1 + (this.width - player.width))) {
@@ -483,12 +564,14 @@ class Monster {
 			dir += "right";
 			coll = game.checkCollision(this);
 			if (coll === player) {
-				return gameOver();
+				game.over = true;
+				return;
+				//return gameOver();
 			}
 			if (coll) {
 				
 				if (coll.type === "bullet") {
-					this.takeDamage();
+					this.takeDamage(coll);
 					coll.remove();
 				}
 				//undoing move
@@ -510,11 +593,13 @@ class Monster {
 			dir += "left";
 			coll = game.checkCollision(this);
 			if (coll === player) {
-				return gameOver();
+				//return gameOver();
+				game.over = true;
+				return;
 			}
 			if (coll) {
 				if (coll.type === "bullet") {
-					this.takeDamage();
+					this.takeDamage(coll);
 					coll.remove();
 				}
 				else {
@@ -537,11 +622,13 @@ class Monster {
 				dir += " down";
 				coll = game.checkCollision(this);
 				if (coll === player) {
-					return gameOver();
+					//return gameOver();
+					game.over = true;
+					return;
 				}
 				if (coll) {
 					if (coll.type === "bullet") {
-						this.takeDamage();
+						this.takeDamage(coll);
 						coll.remove();
 					}
 					else {
@@ -561,11 +648,13 @@ class Monster {
 				dir += " up";
 				coll = game.checkCollision(this);
 				if (coll === player) {
-					return gameOver();
+					//return gameOver();
+					game.over = true;
+					return;
 				}
 				if (coll) {
 					if (coll.type === "bullet") {
-						this.takeDamage();
+						this.takeDamage(coll);
 						coll.remove();
 					}
 					else {
@@ -587,8 +676,8 @@ class Monster {
 			moveAround(dir,axis,this,avObj,player);
 		}
 
-		game.draw();
-		requestAnimationFrame(this.move.bind(this));
+		//game.draw();
+		//requestAnimationFrame(this.move.bind(this));
 	}
 	draw() {
 		ctx.beginPath()
@@ -611,20 +700,18 @@ class Monster {
 
 		return nearPlayer;
 	}
-	takeDamage() {
-		console.log("Here");
-		this.hits--;
+	takeDamage(bullet) {
+		this.hits-= bullet.damage;
 		if (this.hits <= 0) {
-			let index = game.monsters.indexOf(this);
 
 			game.monsters = game.monsters.filter(((elem) => {
 				if (elem !== this) return true;
 			}).bind(this));
 
 			this.dead = true;
-			if (game.monsters.length === 0) {
-				winGame();
-			}
+			// if (game.monsters.length === 0) {
+			// 	winGame();
+			// }
 		}
 	}
 }
@@ -676,10 +763,6 @@ function isInside(obj1,obj2) {
 		let wD = (obj1.width - obj2.width)/2;
 		if (wD < 0) {
 			wD = 0;
-		}
-
-		if (obj2.type === "monster") {
-			console.log(obj1,obj2,wD);
 		}
 
 		if (obj1.x1 > (obj2.x1 - wD) && obj1.x1 < (obj2.x2 + wD)) {
@@ -754,18 +837,17 @@ function moveAround(dir,axis,obj1,obj2,player) {
 }
 
 function gameOver() {
-	console.log("Here");
+	//console.log("Here");
 	ctx.closePath();
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 	game.over = true;
 	ctx.beginPath();
 	ctx.fillStyle = "#000000";
 	ctx.font = "30px Georgia";
-	ctx.fillText("Gameover",270,300);
+	ctx.fillText("Game over.",265,300);
 }
 
 function winGame() {
-	ctx.closePath();
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 	game.over = true;
 	ctx.beginPath();
@@ -780,7 +862,7 @@ function winGame() {
 
 game.generatePlayers(2)
 
-game.generateMonsters(1);
+game.generateMonsters(5);
 
 game.drawMap();
 
