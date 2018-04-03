@@ -1,33 +1,148 @@
+// -------------------------------
+//     Declare Global Variables
+// -------------------------------
+
+//The canvas and context track the drawing area
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
 
-function drawMainRect(x,y,width,height) {
-	ctx.rect(x,y,width,height);
-	ctx.fill();
-	ctx.stroke();
+//The game object stores all objects in the game and functions for generating and drawing them
+const game = {
+	monsters: [],
+	mHeight: 12,
+	mWidth: 12,
+	mhits: 2,
+	mspeed: 0.5,
+	objects: [],   //walls and columns
+	players: [],
+	bullets: [],
+	generateMonsters(amount,speed) {
+		let h = this.mHeight;
+		let w = this.mWidth;
+		let monster = {};
+		for (let i = 1; i <= amount; i++) {
+			//speed - pixels to move about 60 times per second
+			//x1 - x coordinate of the top left corner of the monster
+			//y1 - y coordinate of the top left corner of the monster
+			//width - width of the monster
+			//height - height of the monster
+			//hits - hit points for the monster
+			monster = new Monster((i-1),this.mspeed,(canvas.width - w*2),(canvas.height/(amount+1)*i - h/2),w,h,this.mhits);
+			this.monsters.push(monster);
+			requestAnimationFrame(monster.move.bind(monster));
+		}
+	},
+	generatePlayers(amount) {
+		for (let i = 0; i < amount; i++) {
+			//player number
+			//x1 - starting x value for the top left corner of the player
+			//y1 - starting y value for the top left corner of the player
+			//width - width of the player
+			//height - height of the player
+			this.players.push(new Player((i+1),10,(canvas.height/(amount+1)*(i+1)-5),10,10));
+		}
+	},
+	checkCollision(obj) {
+		//for an object, check if it's inside any of the other objects in the game
+		//if it is, return the object it is inside of
+		for (let player of this.players) {
+			if (isInside(obj,player)) {
+				return player;
+			}
+		}
+		for (let object of this.objects) {
+			if (isInside(obj,object)) {
+				return object;
+			}
+		}
+		for (let monster of this.monsters) {
+			if (isInside(obj,monster)) {
+				return monster;
+			}
+		}
+		for (let bullet of this.bullets) {
+			if (isInside(bullet,obj)) {
+				return bullet;
+			}
+		}
+		return null;
+	},
+	draw() {
+		//draw all of the objects in the game
 
-	let x2 = Math.ceil(x+width)+2;
-	let y2 = Math.ceil(y+height)+2;
-	x = Math.floor(x)-2;
-	y = Math.floor(y)-2;
-	game.objects.push(new Wall(x,y,x2,y2));
+		//draw the walls and columns on the map
+		this.drawMap();
+
+		//draw the players
+		for (let player of this.players) {
+			player.draw();
+		}
+
+		//draw the monsters
+		for (let monster of this.monsters) {
+			monster.draw();
+		}
+
+		//draw bullets that have been fired
+		for (let bullet of this.bullets) {
+			bullet.draw();
+		}
+	},
+	drawMap() {
+		ctx.beginPath();
+		ctx.strokeStyle = "#000000";
+		ctx.fillStyle = "#FFF";
+
+		//calculate sizing unit for the objects based on the canvas size
+		let rectToWall = canvas.height/13;
+
+		//draw four rectangles in the corners
+		drawMainRect(rectToWall,rectToWall,rectToWall*3,rectToWall*2);
+
+		drawMainRect(rectToWall,rectToWall*10,rectToWall*3,rectToWall*2);
+
+		drawMainRect(rectToWall*9,rectToWall,rectToWall*3,rectToWall*2);
+
+		drawMainRect(rectToWall*9,rectToWall*10,rectToWall*3,rectToWall*2);
+
+		ctx.closePath();
+
+
+		//draw two diamonds of columns in the center of the map
+		let num = 0;
+		let x = 0;
+		let back = false;
+		let offset = 0;
+		let radius = 10;
+		let yBegin = rectToWall*3;
+		let yEnd = rectToWall*10;
+		let yIter = (yEnd - yBegin)/6;
+
+		for (let y = yBegin; y <= yEnd; y += yIter) {
+			if (num === 4) {
+				back = true;
+			}
+
+			if(back) {
+				num--;
+			}
+			else {
+				num++;
+			}
+
+			for (let i = 1; i <= num; i++) {
+
+				x = (canvas.width)/(num+1)*i
+
+				drawMainColumn(x,y,radius);
+			}
+		}
+	}
 }
 
-function drawMainColumn(x,y,r) {
-	ctx.beginPath();
-
-	ctx.arc(x,y,r,0,Math.PI * 2);
-	ctx.fill();
-	ctx.stroke();
-
-	ctx.closePath();
-
-	let x2 = Math.ceil(x+r)+1;
-	let y2 = Math.ceil(y+r)+1;
-	x = Math.floor(x-r)-1;
-	y = Math.floor(y-r)-1;
-	game.objects.push(new Wall(x,y,x2,y2));
-}
+// ------------------------
+//          Classes
+// ------------------------
 
 class Player {
 	constructor(name,x1,y1,width,height) {
@@ -328,9 +443,10 @@ class Wall {
 }
 
 class Monster {
-	constructor(speed,x1,y1,width,height,hits) {
+	constructor(number,speed,x1,y1,width,height,hits) {
+		this.number = number;
 		this.type = "monster";
-		this.speed = 0.5;
+		this.speed = speed;
 		this.x1 = x1;
 		this.y1 = y1;
 		this.height = height;
@@ -352,10 +468,11 @@ class Monster {
 		let axis = "";
 
 		if (game.checkCollision(this) === player) {
-			alert("Gameover");
+			return gameOver();
 		}
 
-		if (this.x1 < player.x1 && this.x1 < player.x2) {
+		//if (this.x1 < player.x1 && this.x1 < player.x2) {
+		if (this.x2 <= player.x1) {
 			this.x1+=this.speed;
 			this.x2+=this.speed;
 			dir += "right";
@@ -364,21 +481,25 @@ class Monster {
 				return gameOver();
 			}
 			if (coll) {
+				
 				if (coll.type === "bullet") {
 					this.takeDamage();
 					coll.remove();
 				}
 				//undoing move
 				else {
-					this.x1-=this.speed;
-					this.x2-=this.speed;
-				
-					axis = "y";
-					avObj = coll;
+					this.x1=coll.x1-this.width;
+					this.x2=coll.x1;
+					
+					if (coll.type !== "monster") {
+						axis = "y";
+						avObj = coll;
+					}
 				}
 			}
 		}
-		else {
+		//else {
+		else if (this.x1 >= player.x2) {
 			this.x1-=this.speed;
 			this.x2-=this.speed;
 			dir += "left";
@@ -392,17 +513,20 @@ class Monster {
 					coll.remove();
 				}
 				else {
-					this.x1+=this.speed;
-					this.x2+=this.speed;
+					this.x1=coll.x2;
+					this.x2=coll.x2+this.width;
 
-					axis = "y";
-					avObj = coll;
+					if (coll.type !== "monster") {
+						axis = "y";
+						avObj = coll;
+					}
 				}
 			}
 		}
 
-		if ((isEmpty(avObj))) {
-			if (this.y1 < player.y1 && this.y1 < player.y2) {
+		if (!axis) {
+			//if (this.y1 < player.y1 && this.y1 < player.y2) {
+			if (this.y2 <= player.y1) {
 				this.y1+=this.speed;
 				this.y2+=this.speed;
 				dir += " down";
@@ -416,14 +540,17 @@ class Monster {
 						coll.remove();
 					}
 					else {
-						this.y1-=this.speed;
-						this.y2-=this.speed;
-						axis = "x";
-						avObj = coll;
+						this.y1=coll.y1-this.width;
+						this.y2=coll.y1;
+						if (coll.type !== "monster") {
+							axis = "x";
+							avObj = coll;
+						}
 					}
 				}
 			}
-			else {
+			//else {
+			else if (this.y1 >= player.y2) {
 				this.y1-=this.speed;
 				this.y2-=this.speed;
 				dir += " up";
@@ -437,12 +564,17 @@ class Monster {
 						coll.remove();
 					}
 					else {
-						this.y1+=this.speed;
-						this.y2+=this.speed;
-						axis = "x";
-						avObj = coll;
+						this.y1=coll.y2;
+						this.y2=coll.y2+this.width;
+						if (coll.type !== "monster") {
+							axis = "x";
+							avObj = coll;
+						}
 					}
 				}
+			}
+			if (axis) {
+				moveAround(dir,axis,this,avObj,player);
 			}
 		}
 		//trying to move around object
@@ -451,7 +583,6 @@ class Monster {
 		}
 
 		game.draw();
-		//this.draw();
 		requestAnimationFrame(this.move.bind(this));
 	}
 	draw() {
@@ -492,15 +623,28 @@ class Monster {
 	}
 }
 
+// -------------------------
+// Main Functions
+// -------------------------
+
+
 function shortestDist(obj1,obj2,axis,player,dir) {
+	//console.log(obj2);
 	if (axis === "y") {
 		if ((obj2.y1 < player.y1 && obj2.y2 > player.y1) || (obj2.y1 < player.y2 && obj2.y2 > player.y2)) {
+			console.log("Here 1");
 			return "up";
 		}
-		if (Math.abs(obj2.y1 - obj1.y2) < Math.abs(obj2.y2 - obj1.y1)) {
+		// if (Math.abs(obj2.y1 - obj1.y2) < Math.abs(obj2.y2 - obj1.y1)) {
+		// 	return "up";
+		// }
+		if (player.y1 < obj2.y1) {
+			//console.log("up",obj1.y1,obj1);
+			console.log("Here 2");
 			return "up";
 		}
 		else {
+			//console.log("down",obj1.y1,obj1);
 			return "down";
 		}
 	}
@@ -508,10 +652,15 @@ function shortestDist(obj1,obj2,axis,player,dir) {
 		if ((obj2.x1 > player.x1 && obj2.x2 < player.x1) || (obj2.x1 < player.x2 && obj2.x2 > player.x2)) {
 			return "left";
 		}
-		if (Math.abs(obj2.x1 - obj1.x2) < Math.abs(obj1.x1 - obj2.x2)) {
+		// // if (Math.abs(obj2.x1 - obj1.x2) < Math.abs(obj1.x1 - obj2.x2)) {
+		// // 	return "left";
+		// // }
+		if(player.x1 < obj2.x1) {
+			//console.log("left",obj1.x1,obj1);
 			return "left";
 		}
 		else {
+			//console.log("right",obj1.x1,obj1);
 			return "right";
 		}
 	}
@@ -541,7 +690,8 @@ function isInside(obj1,obj2) {
 function moveAround(dir,axis,obj1,obj2,player) {
 	//obj1 is this
 	dir = dir.split(' ');
-	shrtDis = shortestDist(this,obj2,axis,player,dir);
+	shrtDis = shortestDist(obj1,obj2,axis,player,dir);
+	console.log(shrtDis,obj1,obj2,player,dir);
 	
 	if (axis === "y") {
 		if (dir[1] === "up") {
@@ -590,6 +740,7 @@ function moveAround(dir,axis,obj1,obj2,player) {
 }
 
 function gameOver() {
+	console.log("Here");
 	ctx.closePath();
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 	game.over = true;
@@ -609,117 +760,19 @@ function winGame() {
 	ctx.fillText("You win!",270,300);
 }
 
-const game = {
-	monsters: [],
-	mHeight: 12,
-	mWidth: 12,
-	objects: [],
-	players: [],
-	bullets: [],
-	hits: 2,
-	generateMonsters(amount,speed) {
-		let h = this.mHeight;
-		let w = this.mWidth;
-		let monster = {};
-		for (let i = 1; i <= amount; i++) {
-			monster = new Monster(speed,(canvas.width - w*2),(canvas.height/(amount+1)*i - h/2),w,h,this.hits);
-			this.monsters.push(monster);
-			requestAnimationFrame(monster.move.bind(monster));
-		}
-	},
-	generatePlayers(amount) {
-		for (let i = 0; i < amount; i++) {
-			this.players.push(new Player((i+1),10,(canvas.height/(amount+1)*(i+1)-5),10,10));
-		}		
-	},
-	checkCollision(obj) {
-		for (let player of this.players) {
-			if (isInside(obj,player)) {
-				return player;
-			}
-		}
-		for (let object of this.objects) {
-			if (isInside(obj,object)) {
-				return object;
-			}
-		}
-		for (let monster of this.monsters) {
-			if (isInside(obj,monster)) {
-				return monster;
-			}
-		}
-		for (let bullet of this.bullets) {
-			if (isInside(bullet,obj)) {
-				return bullet;
-			}
-		}
-		return null;
-	},
-	draw() {
-		this.drawMap();
-		for (let player of this.players) {
-			player.draw();
-		}
-		for (let monster of this.monsters) {
-			monster.draw();
-		}
-		for (let bullet of this.bullets) {
-			bullet.draw();
-		}
-	},
-	drawMap() {
-		ctx.beginPath();
-		ctx.strokeStyle = "#000000";
-		ctx.fillStyle = "#FFF";
-
-		let rectToWall = canvas.height/13;
-
-		drawMainRect(rectToWall,rectToWall,rectToWall*3,rectToWall*2);
-
-		drawMainRect(rectToWall,rectToWall*10,rectToWall*3,rectToWall*2);
-
-		drawMainRect(rectToWall*9,rectToWall,rectToWall*3,rectToWall*2);
-
-		drawMainRect(rectToWall*9,rectToWall*10,rectToWall*3,rectToWall*2);
-
-		ctx.closePath();
-
-		let num = 0;
-		let x = 0;
-		let back = false;
-		let offset = 0;
-		let radius = 10;
-		let yBegin = rectToWall*3;
-		let yEnd = rectToWall*10;
-		let yIter = (yEnd - yBegin)/6;
-
-		for (let y = yBegin; y <= yEnd; y += yIter) {
-			if (num === 4) {
-				back = true;
-			}
-
-			if(back) {
-				num--;
-			}
-			else {
-				num++;
-			}
-
-			for (let i = 1; i <= num; i++) {
-
-				x = (canvas.width)/(num+1)*i
-
-				drawMainColumn(x,y,radius);
-			}
-		}
-	}
-}
+// ------------------------
+// Code to Start the Game
+// ------------------------
 
 game.generatePlayers(2)
 
-game.generateMonsters(2,1);
+game.generateMonsters(1);
 
 game.drawMap();
+
+// -------------------------
+// Listeners for Key Presses
+// -------------------------
 
 $('body').on('keydown',(e) => {
 	let key = e.keyCode;
@@ -794,12 +847,37 @@ $('body').on('keyup',(e) => {
 })
 
 
-
-
-
 // -----------------------------------
 // Helper Functions
 // -----------------------------------
+
+function drawMainRect(x,y,width,height) {
+	ctx.rect(x,y,width,height);
+	ctx.fill();
+	ctx.stroke();
+
+	let x2 = Math.ceil(x+width)+2;
+	let y2 = Math.ceil(y+height)+2;
+	x = Math.floor(x)-2;
+	y = Math.floor(y)-2;
+	game.objects.push(new Wall(x,y,x2,y2));
+}
+
+function drawMainColumn(x,y,r) {
+	ctx.beginPath();
+
+	ctx.arc(x,y,r,0,Math.PI * 2);
+	ctx.fill();
+	ctx.stroke();
+
+	ctx.closePath();
+
+	let x2 = Math.ceil(x+r)+1;
+	let y2 = Math.ceil(y+r)+1;
+	x = Math.floor(x-r)-1;
+	y = Math.floor(y-r)-1;
+	game.objects.push(new Wall(x,y,x2,y2));
+}
 
 function calcHyp(x1,y1,width,height,player) {
 	let cX = x1+width/2;
