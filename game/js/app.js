@@ -349,10 +349,12 @@ class Weapon {
 
 class Bullet {
 	constructor(x1,y1,dir) {
+		this.width = 1;
+		this.height = 1;
 		this.x1 = x1;
-		this.x2 = x1+1;
+		this.x2 = x1 + this.width;
 		this.y1 = y1;
-		this.y2 = y1 + 1;
+		this.y2 = y1 + this.height;
 		this.dir = dir;
 		this.speed = 10;
 		this.type = "bullet";
@@ -366,8 +368,8 @@ class Bullet {
 			this.x2+=this.speed;
 
 			coll = game.checkCollision(this);
-			
-			if (coll || this.x1 < 0 || this.x2 > canvas.width) {
+			console.log(this,coll);
+			if (coll || this.x1 <= 0 || this.x2 >= canvas.width) {
 				if (coll && coll.type === "monster") {
 					coll.takeDamage();
 				}
@@ -381,7 +383,7 @@ class Bullet {
 		
 			coll = game.checkCollision(this);
 			
-			if (coll || this.x1 < 0 || this.x2 > canvas.width) {
+			if (coll || this.x1 <= 0 || this.x2 >= canvas.width) {
 				if (coll && coll.type === "monster") {
 					coll.takeDamage();
 				}
@@ -395,7 +397,7 @@ class Bullet {
 
 			coll = game.checkCollision(this);
 				
-			if (coll || this.y1 < 0 || this.y2 > canvas.height) {
+			if (coll || this.y1 <= 0 || this.y2 >= canvas.height) {
 				if (coll && coll.type === "monster") {
 					coll.takeDamage();
 				}
@@ -409,7 +411,7 @@ class Bullet {
 
 			coll = game.checkCollision(this);
 			
-			if (coll || this.y1 < 0 || this.y2 > canvas.height) {
+			if (coll || this.y1 <= 0 || this.y2 >= canvas.height) {
 				if (coll && coll.type === "monster") {
 					coll.takeDamage();
 				}
@@ -469,7 +471,7 @@ class Monster {
 		let dir = "";
 		let axis = "";
 
-		console.log(this,player);
+		//console.log(this,player);
 		if (game.checkCollision(this) === player) {
 			return gameOver();
 		}
@@ -610,6 +612,7 @@ class Monster {
 		return nearPlayer;
 	}
 	takeDamage() {
+		console.log("Here");
 		this.hits--;
 		if (this.hits <= 0) {
 			let index = game.monsters.indexOf(this);
@@ -673,6 +676,10 @@ function isInside(obj1,obj2) {
 		let wD = (obj1.width - obj2.width)/2;
 		if (wD < 0) {
 			wD = 0;
+		}
+
+		if (obj2.type === "monster") {
+			console.log(obj1,obj2,wD);
 		}
 
 		if (obj1.x1 > (obj2.x1 - wD) && obj1.x1 < (obj2.x2 + wD)) {
