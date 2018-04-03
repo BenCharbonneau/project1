@@ -556,11 +556,13 @@ class Monster {
 
 		//if the monster is to the player's left then move right
 		if (this.x2 < player.x2) {
+			//do the move to the right
 			this.x1+=this.speed;
 			this.x2+=this.speed;
 			dir += "right";
 
 			//check to see if moving right caused a collision
+			//coll is the object that was collided with
 			coll = game.checkCollision(this);
 
 			//if the monster collided with a player, then they lost
@@ -620,10 +622,7 @@ class Monster {
 				}
 			}
 		}
-		//if axis isn't set, then there were no collisions
-		//so we can continue moving
-		//if (!axis) {
-			//if we are above the player, move up 
+		//if we are above the player, move up 
 		if (this.y2 < player.y2) {
 			this.y1+=this.speed;
 			this.y2+=this.speed;
@@ -673,27 +672,32 @@ class Monster {
 				}
 			}
 		}
-			//make a move around the object that's in the way
+
+		//if axis was set, then there was a collision
+		//make a move around the object that's in the way
 		if (axis) {
 			moveAround(dir,axis,this,avObj,player);
 		}
-		//}
-		//make a move around the object that's in the way
-		// else {
-		// 	moveAround(dir,axis,this,avObj,player);
-		// }
 	}
 	draw() {
+		//draw a rectangle for the monster
 		ctx.beginPath()
 		ctx.rect(this.x1,this.y1,this.width,this.height);
+		//make them green
 		ctx.fillStyle = "#0f0";
 		ctx.fill();
 	}
 	calcNearPlayer() {
+		//calculate the nearest player
+
+		//initialize variables
 		let prevHyp = Infinity;
 		let hyp = 0;
 		let nearPlayer = {};
 
+		//loop through the players and
+		//calculate the hypotenuse between the monster and the player
+		//the player with the smallest hypotenuse is saved in nearPlayer
 		for (let player of game.players) {
 			hyp = calcHyp(this.x1,this.y1,this.width,this.height,player);
 			if (hyp < prevHyp) {
@@ -702,10 +706,14 @@ class Monster {
 			}
 		}
 
+		//return the player with the smallest hypotenuse
 		return nearPlayer;
 	}
 	takeDamage(bullet) {
+		//take damage from a bullet
 		this.hits-= bullet.damage;
+
+		//if hit points are zero, remove the zombie from the game
 		if (this.hits <= 0) {
 
 			game.monsters = game.monsters.filter(((elem) => {
@@ -721,54 +729,51 @@ class Monster {
 // Main Functions
 // -------------------------
 
-
-function shortestDist(obj1,obj2,axis,player,dir) {
-	if (axis === "y") {
-		if ((obj2.y1 < player.y1 && obj2.y2 > player.y1) || (obj2.y1 < player.y2 && obj2.y2 > player.y2)) {
-			return "up";
-		}
-
-		if (player.y1 < obj2.y1) {
-			return "up";
-		}
-		else {
-			return "down";
-		}
-	}
-	else {
-		if ((obj2.x1 > player.x1 && obj2.x2 < player.x1) || (obj2.x1 < player.x2 && obj2.x2 > player.x2)) {
-			return "left";
-		}
-		if(player.x1 < obj2.x1) {
-			return "left";
-		}
-		else {
-			return "right";
-		}
-	}
-}
-
 function isInside(obj1,obj2) {
+	//checks to see if obj1 has collided with obj2
+	//obj1 is the object that moved
+
+	//if obj1 and obj2 are the same object then don't check
 	if (obj1 !== obj2) {
 
+		//calculate the difference in widths if the moving object
+		//is bigger than the other object
 		let wD = (obj1.width - obj2.width)/2;
 		if (wD < 0) {
 			wD = 0;
 		}
 
+		//calculate the difference in heights if the moving object
+		//is bigger than the other object
+		let hD = (obj1.height - obj2.height)/2;
+		if (hD < 0) {
+			hD = 0;
+		}
+
+		//if the moving object's x1 value is within the other object's x range
 		if (obj1.x1 > (obj2.x1 - wD) && obj1.x1 < (obj2.x2 + wD)) {
-			if (obj1.y1 > (obj2.y1 - wD) && obj1.y1 < (obj2.y2 + wD)) {
+			//and the moving object's y1 values are within the other object's y range
+			//then return true
+			if (obj1.y1 > (obj2.y1 - hD) && obj1.y1 < (obj2.y2 + hD)) {
 				return true;
 			}
-			if (obj1.y2 > (obj2.y1 - wD) && obj1.y2 < (obj2.y2 + wD)) {
+			//or the moving object's y2 values are within the other object's y range
+			//then return true
+			if (obj1.y2 > (obj2.y1 - hD) && obj1.y2 < (obj2.y2 + hD)) {
 				return true;
 			}
 		}
+
+		//if the moving object's x2 value is within the other object's x range
 		if (obj1.x2 > (obj2.x1 - wD) && obj1.x2 < (obj2.x2 + wD)) {
-			if (obj1.y1 > (obj2.y1 - wD) && obj1.y1 < (obj2.y2 + wD)) {
+			//and the moving object's y1 values are within the other object's y range
+			//then return true
+			if (obj1.y1 > (obj2.y1 - hD) && obj1.y1 < (obj2.y2 + hD)) {
 				return true;
 			}
-			if (obj1.y2 > (obj2.y1 - wD) && obj1.y2 < (obj2.y2 + wD)) {
+			//or the moving object's y2 values are within the other object's y range
+			//then return true
+			if (obj1.y2 > (obj2.y1 - hD) && obj1.y2 < (obj2.y2 + hD)) {
 				return true;
 			}
 		}
@@ -776,21 +781,35 @@ function isInside(obj1,obj2) {
 }
 
 function moveAround(dir,axis,obj1,obj2,player) {
-	//obj1 is this
+	//move an object around another object that it collided with
+	//obj1 - the moving object
+	//axis - comes from the move function. It's the opposite axis from the collision axis.
+	//If the collision happens while moving on the x axis then y will be passed in.
+
+	//the direction is stored like "right down" so split it into ["right","down"]
 	dir = dir.split(' ');
+
+	//calculate the shortest distance around the object and toward the player
 	shrtDis = shortestDist(obj1,obj2,axis,player,dir);
 	
+	//If the y axis is free to be moved on
 	if (axis === "y") {
+		//If they were moving up
 		if (dir[1] === "up") {
+			//then just make one more move in that direction
 			if (shrtDis === "up") {
 				obj1.y1-=obj1.speed;
 				obj1.y2-=obj1.speed;
 			}
+			//otherwise, undo the move on the free axis
+			//then do one more move in the correct direction
+			//for a total of two moves
 			else {
 				obj1.y1+=2*obj1.speed;
 				obj1.y2+=2*obj1.speed;
 			}
 		}
+		//If they were moving down
 		else {
 			if (shrtDis === "up") {
 				obj1.y1-=2*obj1.speed;
@@ -802,7 +821,9 @@ function moveAround(dir,axis,obj1,obj2,player) {
 			}
 		}
 	}
+	//If the x axis is free for movement
 	else {
+		//If they were moving right on the free axis
 		if (dir[0] === "right") {
 			if (shrtDis === "right") {
 				obj1.x1+=obj1.speed;
@@ -813,6 +834,7 @@ function moveAround(dir,axis,obj1,obj2,player) {
 				obj1.x2-=2*obj1.speed;
 			}
 		}
+		//if they were moving left on the free axis
 		else {
 			if (shrtDis === "right") {
 				obj1.x1+=2*obj1.speed;
@@ -826,19 +848,78 @@ function moveAround(dir,axis,obj1,obj2,player) {
 	}
 }
 
+function shortestDist(obj1,obj2,axis,player,dir) {
+	//calculate the shortest distance around an object and toward a player
+
+	//if the y axis is free for movement
+	if (axis === "y") {
+		//if the player is behind the object, then go toward the nearest side of the object
+		if ((obj2.y1 < player.y1 && obj2.y2 > player.y1) || (obj2.y1 < player.y2 && obj2.y2 > player.y2)) {
+			
+			if ((obj1.y1-obj2.y1) > (obj2.y2-obj1.y2)) {
+				return "down";
+			}
+			else {
+				return "up";
+			}
+			//return "up";
+		}
+
+		//if the player is above the object, go up
+		if (player.y1 < obj2.y1) {
+			return "up";
+		}
+
+		//if the player is below the object, go down
+		else {
+			return "down";
+		}
+	}
+	//if the x axis is free for movement
+	else {
+		//if the player is behind the object, then go toward the nearest side of the object
+		if ((obj2.x1 > player.x1 && obj2.x2 < player.x1) || (obj2.x1 < player.x2 && obj2.x2 > player.x2)) {
+			
+			if ((obj1.x1-obj2.x1) > (obj2.x2-obj1.x2)) {
+				return "right";
+			}
+			else {
+				return "left";
+			}
+			//return "left";
+		}
+		//if the player is left of the object, go left
+		if(player.x1 < obj2.x1) {
+			return "left";
+		}
+		//if the player is right of the object, go right
+		else {
+			return "right";
+		}
+	}
+}
+
 function gameOver() {
+	//end the game with a loss
+
+	//game.over will tell the game to stop moving
+	game.over = true;
+
 	ctx.closePath();
 	ctx.clearRect(0,0,canvas.width,canvas.height);
-	game.over = true;
 	ctx.beginPath();
 	ctx.fillStyle = "#000000";
 	ctx.font = "30px Georgia";
-	ctx.fillText("Game over.",265,300);
+	ctx.fillText("Game over.",265,300);	
 }
 
 function winGame() {
-	ctx.clearRect(0,0,canvas.width,canvas.height);
+	//end the game with a win
+
+	//game.over will tell the game to stop moving
 	game.over = true;
+
+	ctx.clearRect(0,0,canvas.width,canvas.height);
 	ctx.beginPath();
 	ctx.fillStyle = "#000000";
 	ctx.font = "30px Georgia";
@@ -851,7 +932,7 @@ function winGame() {
 
 game.generatePlayers(2)
 
-game.generateMonsters(5);
+game.generateMonsters(3);
 
 game.drawMap();
 
