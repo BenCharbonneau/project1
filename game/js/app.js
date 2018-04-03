@@ -554,26 +554,39 @@ class Monster {
 		let dir = "";
 		let axis = "";
 
+		//if the monster is to the player's left then move right
 		if (this.x2 < player.x2) {
 			this.x1+=this.speed;
 			this.x2+=this.speed;
 			dir += "right";
+
+			//check to see if moving right caused a collision
 			coll = game.checkCollision(this);
+
+			//if the monster collided with a player, then they lost
 			if (coll === player) {
 				game.over = true;
 				return;
 			}
+
+			//if there was a collision
 			if (coll) {
 				
+				//if the collision was with a bullet, take damage
 				if (coll.type === "bullet") {
 					this.takeDamage(coll);
+
+					//remove the bullet from the game
 					coll.remove();
 				}
-				//undoing move
+
+				//undo the move that caused the collision
 				else {
 					this.x1=coll.x1-this.width;
 					this.x2=coll.x1;
 					
+					//if you didn't collide with a monster,
+					//prepare to move around the object you collided with
 					if (coll.type !== "monster") {
 						axis = "y";
 						avObj = coll;
@@ -581,6 +594,7 @@ class Monster {
 				}
 			}
 		}
+		//else if to the player's right, move left
 		else if (this.x1 > player.x1) {
 			this.x1-=this.speed;
 			this.x2-=this.speed;
@@ -606,65 +620,68 @@ class Monster {
 				}
 			}
 		}
-
-		if (!axis) {
-			if (this.y2 < player.y2) {
-				this.y1+=this.speed;
-				this.y2+=this.speed;
-				dir += " down";
-				coll = game.checkCollision(this);
-				if (coll === player) {
-					game.over = true;
-					return;
-				}
-				if (coll) {
-					if (coll.type === "bullet") {
-						this.takeDamage(coll);
-						coll.remove();
-					}
-					else {
-						this.y1=coll.y1-this.width;
-						this.y2=coll.y1;
-						if (coll.type !== "monster") {
-							axis = "x";
-							avObj = coll;
-						}
-					}
-				}
+		//if axis isn't set, then there were no collisions
+		//so we can continue moving
+		//if (!axis) {
+			//if we are above the player, move up 
+		if (this.y2 < player.y2) {
+			this.y1+=this.speed;
+			this.y2+=this.speed;
+			dir += " down";
+			coll = game.checkCollision(this);
+			if (coll === player) {
+				game.over = true;
+				return;
 			}
-			else if (this.y1 > player.y1) {
-				this.y1-=this.speed;
-				this.y2-=this.speed;
-				dir += " up";
-				coll = game.checkCollision(this);
-				if (coll === player) {
-					game.over = true;
-					return;
+			if (coll) {
+				if (coll.type === "bullet") {
+					this.takeDamage(coll);
+					coll.remove();
 				}
-				if (coll) {
-					if (coll.type === "bullet") {
-						this.takeDamage(coll);
-						coll.remove();
-					}
-					else {
-						this.y1=coll.y2;
-						this.y2=coll.y2+this.width;
-						if (coll.type !== "monster") {
-							axis = "x";
-							avObj = coll;
-						}
+				else {
+					this.y1=coll.y1-this.width;
+					this.y2=coll.y1;
+					if (coll.type !== "monster") {
+						axis = "x";
+						avObj = coll;
 					}
 				}
-			}
-			//try to move around the object that's in the way
-			if (axis) {
-				moveAround(dir,axis,this,avObj,player);
 			}
 		}
-		//try to move around the object that's in the way
-		else {
+		//if we're below the player, move up
+		else if (this.y1 > player.y1) {
+			this.y1-=this.speed;
+			this.y2-=this.speed;
+			dir += " up";
+			coll = game.checkCollision(this);
+			if (coll === player) {
+				game.over = true;
+				return;
+			}
+			if (coll) {
+				if (coll.type === "bullet") {
+					this.takeDamage(coll);
+					coll.remove();
+				}
+				else {
+					this.y1=coll.y2;
+					this.y2=coll.y2+this.width;
+					if (coll.type !== "monster") {
+						axis = "x";
+						avObj = coll;
+					}
+				}
+			}
+		}
+			//make a move around the object that's in the way
+		if (axis) {
 			moveAround(dir,axis,this,avObj,player);
 		}
+		//}
+		//make a move around the object that's in the way
+		// else {
+		// 	moveAround(dir,axis,this,avObj,player);
+		// }
 	}
 	draw() {
 		ctx.beginPath()
