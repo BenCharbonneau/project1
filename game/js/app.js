@@ -101,6 +101,11 @@ const game = {
 
 		//end the game if the players lost
 		if (this.over) return gameOver();
+		
+		//move the players
+		for (let player of this.players) {
+			player.move();
+		}
 
 		//move the monsters
 		for (let monster of this.monsters) {
@@ -183,7 +188,7 @@ const game = {
 class Player {
 	constructor(name,x1,y1,width,height) {
 		//start with a weapon that does 1 damage
-		this.weapon = new Weapon(1);
+		this.weapon = new Weapon(1,1,Infinity);
 		this.name = name;
 		this.width = width;
 		this.height = height;
@@ -192,19 +197,20 @@ class Player {
 		this.x2 = width+x1;
 		this.y2 = height+y1;
 		this.dir = null;
-		this.speed = 6;
+		this.speed = 2;
 	}
-	move(keyCode) {
+	move() {
 		let coll = {};
 
-		//The keyCode will have the direction to go based on the key press
-		
-		if (keyCode === null) {
-			return
+		//The direction to go based on the last key press
+		let dir = this.dir; 
+
+		if (dir === null) {
+			return;
 		}
 
 		//moving right. Other keystrokes will be handled similarly
-		if (keyCode === "right") {
+		if (dir === "right") {
 			//move the player
 			this.x1+=this.speed;
 			this.x2+=this.speed;
@@ -237,7 +243,7 @@ class Player {
 				this.x1 = canvas.width - this.width;
 			}
 		}
-		if (keyCode === "left") {
+		if (dir === "left") {
 			this.x1-=this.speed;
 			this.x2-=this.speed;
 			this.dir = "left";
@@ -263,7 +269,7 @@ class Player {
 				this.x1 = canvas.width - this.width;
 			}
 		}
-		else if (keyCode === "down") {
+		else if (dir === "down") {
 			this.y1+=this.speed;
 			this.y2+=this.speed;
 			this.dir = "down";
@@ -289,7 +295,7 @@ class Player {
 				this.y1 = canvas.height - this.height;
 			}
 		}
-		else if (keyCode === "up") {
+		else if (dir === "up") {
 			this.y1-=this.speed;
 			this.y2-=this.speed;
 			this.dir = "up";
@@ -370,10 +376,13 @@ class Player {
 }
 
 class Weapon {
-	constructor(damage) {
+	constructor(damage,firerate,ammo) {
 		this.damage = damage;
 		this.length = 5;
 		this.dir = "right";
+		this.fr = firerate;
+		this.firing = false;
+		this.ammo = ammo;
 	}
 	draw() {
 		//draw the weapon
@@ -389,6 +398,19 @@ class Weapon {
 		ctx.closePath();
 	}
 	fire() {
+		//tell the game that this weapon is firing a bullet
+		//and don't allow the weapon to fire if it's already firing
+		if (this.firing) {
+			return;
+		}
+
+		if (this.ammo === 0) {
+			return;
+		}
+
+		this.firing = true;
+		this.ammo--;
+
 		//fire in the direction of the weapon
 		if (this.dir === "right") {
 			//create a bullet starting at the tip of the weapon
@@ -404,6 +426,11 @@ class Weapon {
 		else {
 			new Bullet(this.x2,this.y2,"down",this.damage);
 		}
+
+		//stop firing after an amount of time (1 second divided by the firerate)
+		setTimeout(() => {
+			this.firing = false;
+		},(1000/this.fr));
 	}
 }
 
@@ -944,46 +971,59 @@ game.generateMonsters(3);
 $('body').on('keydown',(e) => {
 	//this is listening for key presses from the players
 	//if they pressed one of the accepted keys then it will
-	//move them in a direction or fire their weapon
+	//change their direction or fire their weapon
 
 	let key = e.keyCode;
+	console.log(key,"down");
 	if (key === 87) {
-		game.players[1].move("up");
-		game.players[0].move(game.players[0].dir);
+		game.players[1].dir = "up";
+		//game.players[1].move("up");
+		//game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 83) {
-		game.players[1].move("down");
-		game.players[0].move(game.players[0].dir);
+		game.players[1].dir = "down";
+		//game.players[1].move("down");
+		//game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 65) {
-		game.players[1].move("left");
-		game.players[0].move(game.players[0].dir);
+		game.players[1].dir = "left";
+		//game.players[1].move("left");
+		//game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 68) {
-		game.players[1].move("right");
-		game.players[0].move(game.players[0].dir);
+		game.players[1].dir = "right";
+		//game.players[1].move("right");
+		//game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 38) {
-		game.players[0].move("up");
-		game.players[1].move(game.players[1].dir);
+		game.players[0].dir = "up";
+		//game.players[0].move("up");
+		//game.players[1].move(game.players[1].dir);
 	}
 	else if (key === 40) {
-		game.players[0].move("down");
-		game.players[1].move(game.players[1].dir);
+		game.players[0].dir = "down";
+		//game.players[0].move("down");
+		//game.players[1].move(game.players[1].dir);
 	}
 	else if (key === 37) {
-		game.players[0].move("left");
-		game.players[1].move(game.players[1].dir);
+		game.players[0].dir = "left";
+		//game.players[0].move("left");
+		//game.players[1].move(game.players[1].dir);
 	}
 	else if (key === 39) {
-		game.players[0].move("right");
-		game.players[1].move(game.players[1].dir);
+		game.players[0].dir = "right";
+		//game.players[0].move("right");
+		//game.players[1].move(game.players[1].dir);
 	}
 	else if (key === 13) {
 		game.players[0].weapon.fire();
+		//game.players[0].move(game.players[0].dir);
+		//game.players[1].move(game.players[1].dir);
 	}
 	else if (key === 192) {
 		game.players[1].weapon.fire();
+		//game.players[0].move(game.players[0].dir);
+		//game.players[1].move(game.players[1].dir);
 	}
 
 })
@@ -993,6 +1033,7 @@ $('body').on('keyup',(e) => {
 	//If they lift up off a direction key then I'll stop moving them
 
 	let key = e.keyCode;
+	console.log(key,"up");
 	if (key === 87) {
 		game.players[1].dir = null;
 	}
