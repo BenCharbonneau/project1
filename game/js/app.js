@@ -905,7 +905,7 @@ function gameOver() {
 	//game.over will tell the game to stop moving
 	game.over = true;
 
-	ctx.closePath();
+	//write "Game over." to the canvas
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 	ctx.beginPath();
 	ctx.fillStyle = "#000000";
@@ -919,6 +919,7 @@ function winGame() {
 	//game.over will tell the game to stop moving
 	game.over = true;
 
+	//write "You win!" to the canvas
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 	ctx.beginPath();
 	ctx.fillStyle = "#000000";
@@ -930,17 +931,21 @@ function winGame() {
 // Code to Start the Game
 // ------------------------
 
-game.generatePlayers(2)
+//generate 2 players
+game.generatePlayers(2);
 
+//generate 3 monsters and start everything moving
 game.generateMonsters(3);
-
-game.drawMap();
 
 // -------------------------
 // Listeners for Key Presses
 // -------------------------
 
 $('body').on('keydown',(e) => {
+	//this is listening for key presses from the players
+	//if they pressed one of the accepted keys then it will
+	//move them in a direction or fire their weapon
+
 	let key = e.keyCode;
 	if (key === 87) {
 		game.players[1].move("up");
@@ -984,6 +989,9 @@ $('body').on('keydown',(e) => {
 })
 
 $('body').on('keyup',(e) => {
+	//Listens for players letting go of keys
+	//If they lift up off a direction key then I'll stop moving them
+
 	let key = e.keyCode;
 	if (key === 87) {
 		game.players[1].dir = null;
@@ -1018,10 +1026,16 @@ $('body').on('keyup',(e) => {
 // -----------------------------------
 
 function drawMainRect(x,y,width,height) {
+	//draw a rectangle
+
+	ctx.beginPath();
 	ctx.rect(x,y,width,height);
+	//add a white box
 	ctx.fill();
+	//add a black border
 	ctx.stroke();
 
+	//create an object to represent the rectangle for collision detection
 	let x2 = Math.ceil(x+width)+2;
 	let y2 = Math.ceil(y+height)+2;
 	x = Math.floor(x)-2;
@@ -1032,12 +1046,14 @@ function drawMainRect(x,y,width,height) {
 function drawMainColumn(x,y,r) {
 	ctx.beginPath();
 
+	//draw a white circle with a black border 
 	ctx.arc(x,y,r,0,Math.PI * 2);
 	ctx.fill();
 	ctx.stroke();
 
 	ctx.closePath();
 
+	//create a rectangular object to represent this circle for collision detection
 	let x2 = Math.ceil(x+r)+1;
 	let y2 = Math.ceil(y+r)+1;
 	x = Math.floor(x-r)-1;
@@ -1046,11 +1062,13 @@ function drawMainColumn(x,y,r) {
 }
 
 function calcHyp(x1,y1,width,height,player) {
-	let cX = x1+width/2;
-	let cY = y1+height/2;
-	let pCX = player.x1 + player.width/2;
-	let pCY = player.y1 + player.height/2;
+	let cX = x1+width/2; //center x coordinate of the monster
+	let cY = y1+height/2; //center y coordinate of the monster
+	let pCX = player.x1 + player.width/2; //center x coordinate of the player
+	let pCY = player.y1 + player.height/2; //center y coordinate of the player
 
+	//return a^2 + b^2 = c^2 solved for c
+	//c will be the distance between the player and the monster
 	return Math.sqrt(Math.pow(Math.abs(cX - pCX),2)+Math.pow(Math.abs(cY - pCY),2));
 
 }
