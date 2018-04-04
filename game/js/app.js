@@ -840,53 +840,46 @@ class Monster {
 // Main Functions
 // -------------------------
 
-function isInside(obj1,obj2) {
+function isInside(obj1,obj2,flip) {
 	//checks to see if obj1 has collided with obj2
 	//obj1 is the object that moved
 
 	//if obj1 and obj2 are the same object then don't check
 	if (obj1 !== obj2) {
 
-		//calculate the difference in widths if the moving object
-		//is bigger than the other object
-		let wD = (obj1.width - obj2.width)/2;
-		if (wD < 0) {
-			wD = 0;
-		}
-
-		//calculate the difference in heights if the moving object
-		//is bigger than the other object
-		let hD = (obj1.height - obj2.height)/2;
-		if (hD < 0) {
-			hD = 0;
-		}
-
 		//if the moving object's x1 value is within the other object's x range
-		if (obj1.x1 > (obj2.x1 - wD) && obj1.x1 < (obj2.x2 + wD)) {
+		if (obj1.x1 > obj2.x1 && obj1.x1 < obj2.x2) {
 			//and the moving object's y1 values are within the other object's y range
 			//then return true
-			if (obj1.y1 > (obj2.y1 - hD) && obj1.y1 < (obj2.y2 + hD)) {
+			if (obj1.y1 > obj2.y1 && obj1.y1 < obj2.y2) {
 				return true;
 			}
 			//or the moving object's y2 values are within the other object's y range
 			//then return true
-			if (obj1.y2 > (obj2.y1 - hD) && obj1.y2 < (obj2.y2 + hD)) {
+			if (obj1.y2 > obj2.y1 && obj1.y2 < obj2.y2) {
 				return true;
 			}
 		}
 
 		//if the moving object's x2 value is within the other object's x range
-		if (obj1.x2 > (obj2.x1 - wD) && obj1.x2 < (obj2.x2 + wD)) {
+		if (obj1.x2 > obj2.x1 && obj1.x2 < obj2.x2) {
 			//and the moving object's y1 values are within the other object's y range
 			//then return true
-			if (obj1.y1 > (obj2.y1 - hD) && obj1.y1 < (obj2.y2 + hD)) {
+			if (obj1.y1 > obj2.y1 && obj1.y1 < obj2.y2) {
 				return true;
 			}
 			//or the moving object's y2 values are within the other object's y range
 			//then return true
-			if (obj1.y2 > (obj2.y1 - hD) && obj1.y2 < (obj2.y2 + hD)) {
+			if (obj1.y2 > obj2.y1 && obj1.y2 < obj2.y2) {
 				return true;
 			}
+		}
+
+		if (!flip) {
+			return isInside(obj2,obj1,true);
+		}
+		else {
+			return false;
 		}
 	}
 }
