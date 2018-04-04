@@ -6,6 +6,10 @@
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
 
+const availableWeapons = ['new Weapon("uzi",1,10,20,2,10,canvas.width/2','new Weapon("shotgun",3,1,10,3.5,11,canvas.width/4'];
+
+//const availableWeapons = ['uzi','shotgun'];
+
 //The game object stores all objects in the game and functions for generating and drawing them
 const game = {
 	monsters: [],
@@ -16,6 +20,7 @@ const game = {
 	objects: [],   //walls and columns
 	players: [],
 	bullets: [],
+	weapons: [],
 	generateMonsters(amount,speed) {
 		let h = this.mHeight;
 		let w = this.mWidth;
@@ -46,6 +51,24 @@ const game = {
 			this.players.push(new Player((i+1),10,(canvas.height/(amount+1)*(i+1)-5),10,10));
 		}
 	},
+	generateWeapons() {
+		let wX = 0; //weapon x
+		let wY = 0; //weapon y
+		let weapon = {};
+		for (let i = 0; i < 4; i++) {
+			wX = canvas.width/26
+			if (i === 1 || i === 2) {
+				wX += (canvas.height/26)*24;
+			} 
+			wY = canvas.height/26;
+			if (i >= 2) {
+				wY += canvas.height*24/26;
+			}
+			let coordStr = ','+wX+','+wY+')'
+			eval("weapon = " + availableWeapons[i%availableWeapons.length] + coordStr);
+			this.weapons.push(weapon);
+		}
+	},
 	checkCollision(obj) {
 		//for an object, check if it's inside any of the other objects in the game
 		//if it is, return the object it is inside of
@@ -65,10 +88,16 @@ const game = {
 			}
 		}
 		for (let bullet of this.bullets) {
-			if (isInside(bullet,obj)) {
+			if (isInside(obj,bullet)) {
 				return bullet;
 			}
 		}
+		for (let weapon of this.weapons) {
+			if (isInside(obj,weapon)) {
+				return weapon;
+			}
+		}
+
 		return null;
 	},
 	draw() {
@@ -90,6 +119,10 @@ const game = {
 		//draw bullets that have been fired
 		for (let bullet of this.bullets) {
 			bullet.draw();
+		}
+
+		for (let weapon of this.weapons) {
+			weapon.draw();
 		}
 	},
 	move() {
@@ -123,6 +156,7 @@ const game = {
 		requestAnimationFrame(this.move.bind(this));
 	},
 	drawMap() {
+		game.objects = [];
 		ctx.beginPath();
 		ctx.strokeStyle = "#000000";
 		ctx.fillStyle = "#FFF";
@@ -188,7 +222,7 @@ const game = {
 class Player {
 	constructor(name,x1,y1,width,height) {
 		//start with a weapon that does 1 damage
-		this.weapon = new Weapon(1,1,Infinity);
+		this.weapon = new Weapon("pistol",1,1,Infinity,2,5,canvas.width/2,0,0);
 		this.name = name;
 		this.width = width;
 		this.height = height;
@@ -197,7 +231,9 @@ class Player {
 		this.x2 = width+x1;
 		this.y2 = height+y1;
 		this.dir = null;
-		this.speed = 2;
+		this.prevDir = "right";
+		this.speed = 1.5;
+		this.inventory = [this.weapon];
 	}
 	move() {
 		let coll = {};
@@ -229,6 +265,10 @@ class Player {
 					game.over = true;
 					return;
 				}
+				if (coll.type === "weapon") {
+					this.pickUpWeapon(coll);
+					return;
+				}
 				this.x1=coll.x1-this.width;
 				this.x2=coll.x1;
 			}
@@ -254,6 +294,10 @@ class Player {
 			if (coll) {
 				if (coll.type === "monster") {
 					game.over = true;
+					return;
+				}
+				if (coll.type === "weapon") {
+					this.pickUpWeapon(coll);
 					return;
 				}
 				this.x1=coll.x2;
@@ -282,6 +326,10 @@ class Player {
 					game.over = true;
 					return;
 				}
+				if (coll.type === "weapon") {
+					this.pickUpWeapon(coll);
+					return;
+				}
 				this.y1=coll.y1-this.height;
 				this.y2=coll.y1;
 			}
@@ -307,6 +355,10 @@ class Player {
 					game.over = true;
 					return;
 				}
+				if (coll.type === "weapon") {
+					this.pickUpWeapon(coll);
+					return;
+				}
 				this.y1=coll.y2;
 				this.y2=coll.y2+this.height;
 			}
@@ -319,7 +371,6 @@ class Player {
 				this.y2 = canvas.height;
 				this.y1 = canvas.height - this.height;
 			}
-
 		}
 	}
 	draw() {
@@ -350,52 +401,71 @@ class Player {
 
 		if (this.weapon.dir === "right") {
 			this.weapon.x1 = this.x2 - this.weapon.length/2;
-			this.weapon.y1 = this.y2;
+			this.weapon.y1 = this.y2 - this.weapon.thickness/4;
 			this.weapon.x2 = this.x2 + this.weapon.length/2;
-			this.weapon.y2 = this.y2;
+			this.weapon.y2 = this.y2 + this.weapon.thickness;
 		}
 		else if (this.weapon.dir === "left") {
 			this.weapon.x1 = this.x1 - this.weapon.length/2;
-			this.weapon.y1 = this.y1;
+			this.weapon.y1 = this.y1 - this.weapon.thickness;
 			this.weapon.x2 = this.x1 + this.weapon.length/2;
-			this.weapon.y2 = this.y1;
+			this.weapon.y2 = this.y1 + this.weapon.thickness/4;
 		}
 		else if (this.weapon.dir === "up") {
-			this.weapon.x1 = this.x2;
+			this.weapon.x1 = this.x2 - this.weapon.thickness/4;
 			this.weapon.y1 = this.y1 - this.weapon.length/2;
-			this.weapon.x2 = this.x2;
+			this.weapon.x2 = this.x2 + this.weapon.thickness;
 			this.weapon.y2 = this.y1 + this.weapon.length/2;
 		}
 		else {
-			this.weapon.x1 = this.x1;
+			this.weapon.x1 = this.x1 - this.weapon.thickness;
 			this.weapon.y1 = this.y2 - this.weapon.length/2;
-			this.weapon.x2 = this.x1;
+			this.weapon.x2 = this.x1 + this.weapon.thickness/4;
 			this.weapon.y2 = this.y2 + this.weapon.length/2;
 		}
+	}
+	pickUpWeapon(weapon) {
+		this.inventory.push(weapon);
+		weapon.remove();
+	}
+	cycleWeapon() {
+		let index = this.inventory.indexOf(this.weapon) + 1;
+		if (index > this.inventory.length-1) {
+			index = 0;
+		}
+		this.weapon = this.inventory[index];
+		this.weapon.dir = this.prevDir;
 	}
 }
 
 class Weapon {
-	constructor(damage,firerate,ammo) {
+	constructor(name,damage,firerate,ammo,thickness=1,length=5,range,x1,y1) {
+		this.name = name;
+		this.type = "weapon";
 		this.damage = damage;
-		this.length = 5;
+		this.length = length;
 		this.dir = "right";
 		this.fr = firerate;
 		this.firing = false;
 		this.ammo = ammo;
+		this.width = length;
+		this.height = thickness;
+		this.thickness = thickness;
+		this.range = range;
+		this.x1 = x1;
+		this.y1 = y1;
+		this.x2 = x1 + this.width;
+		this.y2 = y1 + this.height;
+		
 	}
 	draw() {
 		//draw the weapon
 		ctx.beginPath()
-		//move to the start of the line
-		ctx.moveTo(this.x1,this.y1);
-		//sketch to the second point of the line
-		ctx.lineTo(this.x2,this.y2);
-		//set the color to red
-		ctx.strokeStyle = "#f00";
-		//create the line
-		ctx.stroke();
+		ctx.rect(this.x1,this.y1,this.x2-this.x1,this.y2-this.y1);
+		ctx.fillStyle = "#f00";
+		ctx.fill();
 		ctx.closePath();
+		ctx.lineWidth = 1;
 	}
 	fire() {
 		//tell the game that this weapon is firing a bullet
@@ -415,16 +485,16 @@ class Weapon {
 		if (this.dir === "right") {
 			//create a bullet starting at the tip of the weapon
 			//the bullet will have the same damage as the weapon
-			new Bullet(this.x2,this.y1,"right",this.damage);
+			new Bullet(this.x2,this.y1,"right",this.damage,this.thickness,this.range);
 		}
 		else if (this.dir === "left") {
-			new Bullet((this.x1-1),this.y1,"left",this.damage);
+			new Bullet((this.x1-this.thickness-1),this.y1,"left",this.damage,this.thickness,this.range);
 		}
 		else if (this.dir === "up") {
-			new Bullet(this.x1,(this.y1-1),"up",this.damage);
+			new Bullet(this.x1,(this.y1-this.thickness-1),"up",this.damage,this.thickness,this.range);
 		}
 		else {
-			new Bullet(this.x2,this.y2,"down",this.damage);
+			new Bullet(this.x2,this.y2,"down",this.damage,this.thickness,this.range);
 		}
 
 		//stop firing after an amount of time (1 second divided by the firerate)
@@ -432,19 +502,33 @@ class Weapon {
 			this.firing = false;
 		},(1000/this.fr));
 	}
+	remove() {
+		//remove the weapon from the game's array of weapons
+		//Its movement will be handled by the player now
+		game.weapons = game.weapons.filter(((elem) => {
+			if (elem !== this) return true;
+		}).bind(this));
+	}
 }
 
 class Bullet {
-	constructor(x1,y1,dir,damage) {
+	constructor(x1,y1,dir,damage,width,range) {
 		//set size and position
-		this.width = 2;
-		this.height = 2;
+		if (width < 2) {
+			width = 2;
+		}
+		this.width = width;
+		this.height = width;
 		this.x1 = x1;
 		this.x2 = x1 + this.width;
 		this.y1 = y1;
 		this.y2 = y1 + this.height;
 
 		this.dir = dir;
+		this.range = range;
+		this.startX = x1;
+		this.startY = y1;
+		
 		//bullets will move 10 pixels per screen refresh
 		this.speed = 10;
 		this.damage = damage;
@@ -468,7 +552,7 @@ class Bullet {
 
 			//if there is a collision or the bullet leaves the canvas,
 			//remove the bullet from the game
-			if (coll || this.x1 <= 0 || this.x2 >= canvas.width) {
+			if (coll || this.x1 <= 0 || this.x2 >= canvas.width || this.x2 >= this.startX+this.range) {
 				//if it hit a monster, then have the monster take damage
 				if (coll && coll.type === "monster") {
 					coll.takeDamage(this);
@@ -484,7 +568,7 @@ class Bullet {
 		
 			coll = game.checkCollision(this);
 			
-			if (coll || this.x1 <= 0 || this.x2 >= canvas.width) {
+			if (coll || this.x1 <= 0 || this.x2 >= canvas.width || this.x1 <= this.startX-this.range) {
 				if (coll && coll.type === "monster") {
 					coll.takeDamage(this);
 				}
@@ -498,7 +582,7 @@ class Bullet {
 
 			coll = game.checkCollision(this);
 				
-			if (coll || this.y1 <= 0 || this.y2 >= canvas.height) {
+			if (coll || this.y1 <= 0 || this.y2 >= canvas.height || this.y2 >= this.startY+this.range) {
 				if (coll && coll.type === "monster") {
 					coll.takeDamage(this);
 				}
@@ -512,7 +596,7 @@ class Bullet {
 
 			coll = game.checkCollision(this);
 			
-			if (coll || this.y1 <= 0 || this.y2 >= canvas.height) {
+			if (coll || this.y1 <= 0 || this.y2 >= canvas.height || this.y1 <= this.startY-this.range) {
 				if (coll && coll.type === "monster") {
 					coll.takeDamage(this);
 				}
@@ -964,6 +1048,9 @@ game.generatePlayers(2);
 //generate 3 monsters and start everything moving
 game.generateMonsters(3);
 
+//generate weapons
+game.generateWeapons();
+
 // -------------------------
 // Listeners for Key Presses
 // -------------------------
@@ -974,56 +1061,41 @@ $('body').on('keydown',(e) => {
 	//change their direction or fire their weapon
 
 	let key = e.keyCode;
-	console.log(key,"down");
 	if (key === 87) {
 		game.players[1].dir = "up";
-		//game.players[1].move("up");
-		//game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 83) {
 		game.players[1].dir = "down";
-		//game.players[1].move("down");
-		//game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 65) {
 		game.players[1].dir = "left";
-		//game.players[1].move("left");
-		//game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 68) {
 		game.players[1].dir = "right";
-		//game.players[1].move("right");
-		//game.players[0].move(game.players[0].dir);
 	}
 	else if (key === 38) {
 		game.players[0].dir = "up";
-		//game.players[0].move("up");
-		//game.players[1].move(game.players[1].dir);
 	}
 	else if (key === 40) {
 		game.players[0].dir = "down";
-		//game.players[0].move("down");
-		//game.players[1].move(game.players[1].dir);
 	}
 	else if (key === 37) {
 		game.players[0].dir = "left";
-		//game.players[0].move("left");
-		//game.players[1].move(game.players[1].dir);
 	}
 	else if (key === 39) {
 		game.players[0].dir = "right";
-		//game.players[0].move("right");
-		//game.players[1].move(game.players[1].dir);
 	}
-	else if (key === 13) {
+	else if (key === 16) {
 		game.players[0].weapon.fire();
-		//game.players[0].move(game.players[0].dir);
-		//game.players[1].move(game.players[1].dir);
 	}
-	else if (key === 192) {
+	else if (key === 81) {
 		game.players[1].weapon.fire();
-		//game.players[0].move(game.players[0].dir);
-		//game.players[1].move(game.players[1].dir);
+	}
+	else if (key === 69) {
+		game.players[1].cycleWeapon();
+	}
+	else if (key === 191) {
+		game.players[0].cycleWeapon();
 	}
 
 })
@@ -1033,29 +1105,36 @@ $('body').on('keyup',(e) => {
 	//If they lift up off a direction key then I'll stop moving them
 
 	let key = e.keyCode;
-	console.log(key,"up");
 	if (key === 87) {
+		game.players[1].prevDir = game.players[1].dir;
 		game.players[1].dir = null;
 	}
 	else if (key === 83) {
+		game.players[1].prevDir = game.players[1].dir;
 		game.players[1].dir = null;
 	}
 	else if (key === 65) {
+		game.players[1].prevDir = game.players[1].dir;
 		game.players[1].dir = null;
 	}
 	else if (key === 68) {
+		game.players[1].prevDir = game.players[1].dir;
 		game.players[1].dir = null;
 	}
 	else if (key === 38) {
+		game.players[0].prevDir = game.players[0].dir;
 		game.players[0].dir = null;
 	}
 	else if (key === 40) {
+		game.players[0].prevDir = game.players[0].dir;
 		game.players[0].dir = null;
 	}
 	else if (key === 37) {
+		game.players[0].prevDir = game.players[0].dir;
 		game.players[0].dir = null;
 	}
 	else if (key === 39) {
+		game.players[0].prevDir = game.players[0].dir;
 		game.players[0].dir = null;
 	}
 
