@@ -990,46 +990,24 @@ class Monster {
 // Main Functions
 // -------------------------
 
-function isInside(obj1,obj2,flip) {
+function isInside(obj1,obj2) {
 	//checks to see if obj1 has collided with obj2
 	//obj1 is the object that moved
 
 	//if obj1 and obj2 are the same object then don't check
 	if (obj1 !== obj2) {
 
-		//if the moving object's x1 value is within the other object's x range
-		if (obj1.x1 > obj2.x1 && obj1.x1 < obj2.x2) {
-			//and the moving object's y1 values are within the other object's y range
-			//then return true
-			if (obj1.y1 > obj2.y1 && obj1.y1 < obj2.y2) {
-				return true;
+		for (let x = obj1.x1; x <= obj1.x2; x++) {
+			//if the moving object's x value is within the other object's x range
+			if (x > obj2.x1 && x < obj2.x2) {
+				//and the moving object's y values are within the other object's y range
+				//then return true
+				for (let y = obj1.y1; y <= obj1.y2; y++) {
+					if (y > obj2.y1 && y < obj2.y2) {
+						return true;
+					}
+				}
 			}
-			//or the moving object's y2 values are within the other object's y range
-			//then return true
-			if (obj1.y2 > obj2.y1 && obj1.y2 < obj2.y2) {
-				return true;
-			}
-		}
-
-		//if the moving object's x2 value is within the other object's x range
-		if (obj1.x2 > obj2.x1 && obj1.x2 < obj2.x2) {
-			//and the moving object's y1 values are within the other object's y range
-			//then return true
-			if (obj1.y1 > obj2.y1 && obj1.y1 < obj2.y2) {
-				return true;
-			}
-			//or the moving object's y2 values are within the other object's y range
-			//then return true
-			if (obj1.y2 > obj2.y1 && obj1.y2 < obj2.y2) {
-				return true;
-			}
-		}
-
-		if (!flip) {
-			return isInside(obj2,obj1,true);
-		}
-		else {
-			return false;
 		}
 	}
 }
