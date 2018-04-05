@@ -10,24 +10,29 @@ const availableWeapons = ['"uzi",1,10,30,2,10,canvas.width/2,120,false',
 						'"shotgun",3,2,10,3.5,11,canvas.width/4,50,false',
 						'"rocket",10,1,3,5,17,canvas.width,6,true'];
 
-//The game object stores all objects in the game and functions for generating and drawing them
-const game = {
-	monsters: [],
-	mHeight: 12,
-	mWidth: 12,
-	mHits: 2,      //monster hit points
-	mNum: 3,
-	mSpeed: 0.5,
-	bossW: 16,
-	bossH: 16,
-	bossS: 0.7,
-	bossHit: 5,
-	objects: [],   //walls and columns
-	players: [],
-	bullets: [],
-	weapons: [],
-	explosions: [],
-	round: 5,
+// ------------------------
+//          Classes
+// ------------------------
+
+class Game {
+	constructor() {
+		this.monsters = [];
+		this.mHeight = 12;
+		this.mWidth = 12;
+		this.mHits = 2;      //monster hit points
+		this.mNum = 3;
+		this.mSpeed = 0.5;
+		this.bossW = 16;
+		this.bossH = 16;
+		this.bossS = 0.7;
+		this.bossHit = 5;
+		this.objects = [];   //walls and columns
+		this.players = [];
+		this.bullets = [];
+		this.weapons = [];
+		this.explosions = [];
+		this.round = 5;
+	}
 	generateMonsters(speed) {
 		let amount = this.mNum;
 		let h = this.mHeight;
@@ -52,7 +57,7 @@ const game = {
 			//requestAnimationFrame(monster.move.bind(monster));
 		}
 		requestAnimationFrame(this.move.bind(this));
-	},
+	}
 	generatePlayers(amount) {
 		for (let i = 0; i < amount; i++) {
 			//player number
@@ -62,7 +67,7 @@ const game = {
 			//height - height of the player
 			this.players.push(new Player((i+1),10,(canvas.height/(amount+1)*(i+1)-5),10,10));
 		}
-	},
+	}
 	generateWeapons() {
 		clearTimeout(game.wTime);
 		game.weapons = [];
@@ -97,7 +102,7 @@ const game = {
 			}
 		}
 		game.wTime = setTimeout(this.generateWeapons.bind(this),60000);
-	},
+	}
 	buffMonsters() {
 		this.mHits++;
 		this.bossHit+=2;
@@ -108,7 +113,7 @@ const game = {
 				this.monsters.push(new Monster(this.bossS,canvas.width/2,((i%2)*canvas.height-((-1)*(i%2))*20),this.bossW,this.bossH,this.bossHit,"#f00"));
 			}
 		}
-	},
+	}
 	checkCollision(obj) {
 		//for an object, check if it's inside any of the other objects in the game
 		//if it is, return the object it is inside of
@@ -151,7 +156,7 @@ const game = {
 		}
 
 		return null;
-	},
+	}
 	draw() {
 		//draw all of the objects in the game
 		
@@ -182,7 +187,7 @@ const game = {
 		for (let monster of this.monsters) {
 			monster.draw();
 		}
-	},
+	}
 	move() {
 		//clear the canvas
 		ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -212,7 +217,7 @@ const game = {
 		this.draw();
 
 		requestAnimationFrame(this.move.bind(this));
-	},
+	}
 	drawMap() {
 		game.objects = [];
 		ctx.beginPath();
@@ -272,10 +277,6 @@ const game = {
 		}
 	}
 }
-
-// ------------------------
-//          Classes
-// ------------------------
 
 class Player {
 	constructor(name,x1,y1,width,height) {
@@ -708,6 +709,8 @@ class Explosion {
 		this.size = 30;
 		this.x1 = x1 - this.size/2;
 		this.y1 = y1 - this.size/2;
+		this.x2 = this.x1 + this.size;
+		this.y2 = this.y1 + this.size;
 		this.color = "#FFA500";
 		this.type = "explosion";
 
@@ -784,6 +787,7 @@ class Monster {
 		let avObj = {};
 		let dir = "";
 		let axis = "";
+		let type = "";
 
 		//if the monster is to the player's left then move right
 		if (this.x2 < player.x2) {
@@ -796,21 +800,25 @@ class Monster {
 			//coll is the object that was collided with
 			coll = game.checkCollision(this);
 
-			//if the monster collided with a player, then they lost
-			if (coll === player) {
-				game.over = true;
-				return;
-			}
-
 			//if there was a collision
 			if (coll) {
 				
+				type = coll.type;
+				
+				//if the monster collided with a player, then they lost
+				if (type === "player") {
+					game.over = true;
+					return;
+				}
+
 				//if the collision was with a bullet, take damage
-				if (coll.type === "bullet" || coll.type === "explosion") {
+				if (type === "bullet" || type === "explosion") {
 					this.takeDamage(coll);
 
 					//remove the bullet from the game
-					coll.remove();
+					if (type === "bullet") {
+						coll.remove();
+					}
 				}
 
 				//undo the move that caused the collision
@@ -820,7 +828,7 @@ class Monster {
 					
 					//if you didn't collide with a monster,
 					//prepare to move around the object you collided with
-					if (coll.type !== "monster") {
+					if (type !== "monster") {
 						axis = "y";
 						avObj = coll;
 					}
@@ -833,20 +841,26 @@ class Monster {
 			this.x2-=this.speed;
 			dir += "left";
 			coll = game.checkCollision(this);
-			if (coll === player) {
-				game.over = true;
-				return;
-			}
+			
 			if (coll) {
-				if (coll.type === "bullet" || coll.type === "explosion") {
+				type = coll.type;
+
+				if (type === "player") {
+					game.over = true;
+					return;
+				}
+
+				if (type === "bullet" || type === "explosion") {
 					this.takeDamage(coll);
-					coll.remove();
+					if (type === "bullet") {
+						coll.remove();
+					}
 				}
 				else {
 					this.x1=coll.x2;
 					this.x2=coll.x2+this.width;
 
-					if (coll.type !== "monster") {
+					if (type !== "monster") {
 						axis = "y";
 						avObj = coll;
 					}
@@ -858,20 +872,28 @@ class Monster {
 			this.y1+=this.speed;
 			this.y2+=this.speed;
 			dir += " down";
+
 			coll = game.checkCollision(this);
-			if (coll === player) {
-				game.over = true;
-				return;
-			}
+
 			if (coll) {
-				if (coll.type === "bullet" || coll.type === "explosion") {
+				type = coll.type;
+
+				if (type === "player") {
+					game.over = true;
+					return;
+				}
+
+				if (type === "bullet" || type === "explosion") {
 					this.takeDamage(coll);
-					coll.remove();
+					if (type === "bullet") {
+						coll.remove();
+					}
 				}
 				else {
 					this.y1=coll.y1-this.width;
 					this.y2=coll.y1;
-					if (coll.type !== "monster") {
+
+					if (type !== "monster") {
 						axis = "x";
 						avObj = coll;
 					}
@@ -883,20 +905,28 @@ class Monster {
 			this.y1-=this.speed;
 			this.y2-=this.speed;
 			dir += " up";
+
 			coll = game.checkCollision(this);
-			if (coll === player) {
-				game.over = true;
-				return;
-			}
+			
 			if (coll) {
-				if (coll.type === "bullet" || coll.type === "explosion") {
+				type = coll.type;
+
+				if (type === "player") {
+					game.over = true;
+					return;
+				}
+
+				if (type === "bullet" || type === "explosion") {
 					this.takeDamage(coll);
-					coll.remove();
+					if (type === "bullet") {
+						coll.remove();
+					}
 				}
 				else {
 					this.y1=coll.y2;
 					this.y2=coll.y2+this.width;
-					if (coll.type !== "monster") {
+
+					if (type !== "monster") {
 						axis = "x";
 						avObj = coll;
 					}
@@ -1135,6 +1165,8 @@ function gameOver() {
 	ctx.fillStyle = "#000000";
 	ctx.font = "30px Georgia";
 	ctx.fillText("Game over.",265,300);	
+
+	playAgain();
 }
 
 function winGame() {
@@ -1148,9 +1180,9 @@ function winGame() {
 		ctx.font = "30px Georgia";
 		ctx.fillText("You win!",270,300);
 
+		playAgain();
+
 		//end the game with a win
-		//game.over will tell the game to stop moving
-		game.over = true;
 	}
 	else {
 		game.round++;
@@ -1160,122 +1192,151 @@ function winGame() {
 		game.generateMonsters();
 		game.generateWeapons();
 	}
-	
+}
+
+function playAgain() {
+	//game.over will tell the game to stop moving
+	game.over = true;
+	clearTimeout(game.wTime);
+
+	ctx.beginPath();
+	ctx.fillStyle = "#000000";
+	ctx.font = "30px Georgia";
+	ctx.fillText("Hit Enter to play again",190,350);
+
+	$('body').on('keydown',(e) => {
+		if (e.keyCode === 13) {
+			$('body').off();
+			$('#container div').off();
+			newGame();
+			$('#container div').toggleClass('hidden');
+			$('#map').toggleClass('hidden');
+		}
+	})
+		
+}
+
+function newGame() {
+	game = new Game();
+
+	$('#container div').on('click',(e) => {
+		let players = 2;
+
+		if ($(e.currentTarget).text() === "1 Player") {
+			players = 1;
+		}
+
+		$('#container div').toggleClass('hidden');
+
+		$('#map').toggleClass('hidden');
+		//generate 2 players
+		game.generatePlayers(players);
+
+		//generate 3 monsters and start everything moving
+		game.generateMonsters();
+
+		//generate weapons
+		game.generateWeapons();
+	})
+
+
+	// -------------------------
+	// Listeners for Key Presses
+	// -------------------------
+
+	$('body').on('keydown',(e) => {
+		//this is listening for key presses from the players
+		//if they pressed one of the accepted keys then it will
+		//change their direction or fire their weapon
+
+		let key = e.keyCode;
+		if (key === 87) {
+			game.players[1].dir = "up";
+		}
+		else if (key === 83) {
+			game.players[1].dir = "down";
+		}
+		else if (key === 65) {
+			game.players[1].dir = "left";
+		}
+		else if (key === 68) {
+			game.players[1].dir = "right";
+		}
+		else if (key === 38) {
+			game.players[0].dir = "up";
+		}
+		else if (key === 40) {
+			game.players[0].dir = "down";
+		}
+		else if (key === 37) {
+			game.players[0].dir = "left";
+		}
+		else if (key === 39) {
+			game.players[0].dir = "right";
+		}
+		else if (key === 16) {
+			game.players[0].weapon.fire();
+		}
+		else if (key === 81) {
+			game.players[1].weapon.fire();
+		}
+		else if (key === 69) {
+			game.players[1].cycleWeapon();
+		}
+		else if (key === 191) {
+			game.players[0].cycleWeapon();
+		}
+
+	})
+
+	$('body').on('keyup',(e) => {
+		//Listens for players letting go of keys
+		//If they lift up off a direction key then I'll stop moving them
+
+		let key = e.keyCode;
+		if (key === 87) {
+			game.players[1].prevDir = game.players[1].dir;
+			game.players[1].dir = null;
+		}
+		else if (key === 83) {
+			game.players[1].prevDir = game.players[1].dir;
+			game.players[1].dir = null;
+		}
+		else if (key === 65) {
+			game.players[1].prevDir = game.players[1].dir;
+			game.players[1].dir = null;
+		}
+		else if (key === 68) {
+			game.players[1].prevDir = game.players[1].dir;
+			game.players[1].dir = null;
+		}
+		else if (key === 38) {
+			game.players[0].prevDir = game.players[0].dir;
+			game.players[0].dir = null;
+		}
+		else if (key === 40) {
+			game.players[0].prevDir = game.players[0].dir;
+			game.players[0].dir = null;
+		}
+		else if (key === 37) {
+			game.players[0].prevDir = game.players[0].dir;
+			game.players[0].dir = null;
+		}
+		else if (key === 39) {
+			game.players[0].prevDir = game.players[0].dir;
+			game.players[0].dir = null;
+		}
+	})
 }
 
 // ------------------------
 // Code to Start the Game
 // ------------------------
-$('#container div').on('click',(e) => {
-	let players = 2;
 
-	if ($(e.currentTarget).text() === "1 Player") {
-		players = 1;
-	}
+//The game object stores all objects in the game and functions for generating and drawing them
+let game = {};
 
-	$('#container div').toggleClass('hidden');
-
-	$('#map').toggleClass('hidden');
-	//generate 2 players
-	game.generatePlayers(players);
-
-	//generate 3 monsters and start everything moving
-	game.generateMonsters();
-
-	//generate weapons
-	game.generateWeapons();
-})
-
-
-// -------------------------
-// Listeners for Key Presses
-// -------------------------
-
-$('body').on('keydown',(e) => {
-	//this is listening for key presses from the players
-	//if they pressed one of the accepted keys then it will
-	//change their direction or fire their weapon
-
-	let key = e.keyCode;
-	if (key === 87) {
-		game.players[1].dir = "up";
-	}
-	else if (key === 83) {
-		game.players[1].dir = "down";
-	}
-	else if (key === 65) {
-		game.players[1].dir = "left";
-	}
-	else if (key === 68) {
-		game.players[1].dir = "right";
-	}
-	else if (key === 38) {
-		game.players[0].dir = "up";
-	}
-	else if (key === 40) {
-		game.players[0].dir = "down";
-	}
-	else if (key === 37) {
-		game.players[0].dir = "left";
-	}
-	else if (key === 39) {
-		game.players[0].dir = "right";
-	}
-	else if (key === 16) {
-		game.players[0].weapon.fire();
-	}
-	else if (key === 81) {
-		game.players[1].weapon.fire();
-	}
-	else if (key === 69) {
-		game.players[1].cycleWeapon();
-	}
-	else if (key === 191) {
-		game.players[0].cycleWeapon();
-	}
-
-})
-
-$('body').on('keyup',(e) => {
-	//Listens for players letting go of keys
-	//If they lift up off a direction key then I'll stop moving them
-
-	let key = e.keyCode;
-	if (key === 87) {
-		game.players[1].prevDir = game.players[1].dir;
-		game.players[1].dir = null;
-	}
-	else if (key === 83) {
-		game.players[1].prevDir = game.players[1].dir;
-		game.players[1].dir = null;
-	}
-	else if (key === 65) {
-		game.players[1].prevDir = game.players[1].dir;
-		game.players[1].dir = null;
-	}
-	else if (key === 68) {
-		game.players[1].prevDir = game.players[1].dir;
-		game.players[1].dir = null;
-	}
-	else if (key === 38) {
-		game.players[0].prevDir = game.players[0].dir;
-		game.players[0].dir = null;
-	}
-	else if (key === 40) {
-		game.players[0].prevDir = game.players[0].dir;
-		game.players[0].dir = null;
-	}
-	else if (key === 37) {
-		game.players[0].prevDir = game.players[0].dir;
-		game.players[0].dir = null;
-	}
-	else if (key === 39) {
-		game.players[0].prevDir = game.players[0].dir;
-		game.players[0].dir = null;
-	}
-
-})
-
+newGame();
 
 // -----------------------------------
 // Helper Functions
