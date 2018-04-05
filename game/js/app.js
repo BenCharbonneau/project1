@@ -31,7 +31,7 @@ class Game {
 		this.bullets = [];
 		this.weapons = [];
 		this.explosions = [];
-		this.round = 5;
+		this.round = 1;
 	}
 	generateMonsters(speed) {
 		let amount = this.mNum;
@@ -106,7 +106,7 @@ class Game {
 	buffMonsters() {
 		this.mHits++;
 		this.bossHit+=2;
-		this.mNum *= 2;
+		this.mNum += 3*this.round;
 		if (this.round%5 === 0) {
 			this.mSpeed += 0.1;
 			for (let i = 0; i < this.round/5; i++) {
@@ -117,11 +117,15 @@ class Game {
 	checkCollision(obj) {
 		//for an object, check if it's inside any of the other objects in the game
 		//if it is, return the object it is inside of
-		for (let player of this.players) {
-			if (isInside(obj,player)) {
-				return player;
+		
+		if (obj.type !== "weapon") {
+			for (let player of this.players) {
+				if (isInside(obj,player)) {
+					return player;
+				}
 			}
 		}
+
 		for (let object of this.objects) {
 			if (isInside(obj,object)) {
 				return object;
@@ -297,6 +301,7 @@ class Player {
 	}
 	move() {
 		let coll = {};
+		let wColl = {};
 
 		//The direction to go based on the last key press
 		let dir = this.dir; 
@@ -342,6 +347,17 @@ class Player {
 				this.x2 = canvas.width;
 				this.x1 = canvas.width - this.width;
 			}
+
+			//update the player's weapon's location and dimensions
+			this.upWeapDir();
+
+			wColl = game.checkCollision(this.weapon);
+			if (wColl) {
+				if (wColl.y1 >= this.y2) {
+					this.y2 = wColl.y1 - this.weapon.thickness*0.75;
+					this.y1 = this.y2 - this.height;
+				}
+			}
 		}
 		if (dir === "left") {
 			this.x1-=this.speed;
@@ -371,6 +387,17 @@ class Player {
 			if (this.x2 > canvas.width) {
 				this.x2 = canvas.width;
 				this.x1 = canvas.width - this.width;
+			}
+
+			//update the player's weapon's location and dimensions
+			this.upWeapDir();
+			wColl = game.checkCollision(this.weapon);
+
+			if (wColl) {
+				if (wColl.y2 <= this.y1) {
+					this.y1 = wColl.y2 + this.weapon.thickness*0.75;
+					this.y2 = this.y1 + this.height;
+				}
 			}
 		}
 		else if (dir === "down") {
@@ -402,6 +429,17 @@ class Player {
 				this.y2 = canvas.height;
 				this.y1 = canvas.height - this.height;
 			}
+
+			//update the player's weapon's location and dimensions
+			this.upWeapDir();
+			wColl = game.checkCollision(this.weapon);
+
+			if (wColl) {
+				if (wColl.x2 <= this.x1) {
+					this.x1 = wColl.x2 + this.weapon.thickness*0.75;
+					this.x2 = this.x1 + this.width;
+				}
+			}
 		}
 		else if (dir === "up") {
 			this.y1-=this.speed;
@@ -431,6 +469,17 @@ class Player {
 				this.y2 = canvas.height;
 				this.y1 = canvas.height - this.height;
 			}
+
+			//update the player's weapon's location and dimensions
+			this.upWeapDir();
+			wColl = game.checkCollision(this.weapon);
+
+			if (wColl) {
+				if (wColl.x1 >= this.x2) {
+					this.x2 = wColl.x1 - this.weapon.thickness*0.75;
+					this.x1 = this.x2 - this.width;
+				}
+			}
 		}
 	}
 	draw() {
@@ -448,8 +497,8 @@ class Player {
 		//fill the rectangle
 		ctx.fill();
 
-		//update the player's weapon's location and dimensions
-		this.upWeapDir()
+		//update the location of the weapon
+		this.upWeapDir();
 
 		//draw the weapon
 		this.weapon.draw();
@@ -463,22 +512,22 @@ class Player {
 			this.weapon.x1 = this.x2 - this.weapon.length/2;
 			this.weapon.y1 = this.y2 - this.weapon.thickness/4;
 			this.weapon.x2 = this.x2 + this.weapon.length/2;
-			this.weapon.y2 = this.y2 + this.weapon.thickness;
+			this.weapon.y2 = this.y2 + this.weapon.thickness*3/4;
 		}
 		else if (this.weapon.dir === "left") {
 			this.weapon.x1 = this.x1 - this.weapon.length/2;
-			this.weapon.y1 = this.y1 - this.weapon.thickness;
+			this.weapon.y1 = this.y1 - this.weapon.thickness*3/4;
 			this.weapon.x2 = this.x1 + this.weapon.length/2;
 			this.weapon.y2 = this.y1 + this.weapon.thickness/4;
 		}
 		else if (this.weapon.dir === "up") {
 			this.weapon.x1 = this.x2 - this.weapon.thickness/4;
 			this.weapon.y1 = this.y1 - this.weapon.length/2;
-			this.weapon.x2 = this.x2 + this.weapon.thickness;
+			this.weapon.x2 = this.x2 + this.weapon.thickness*3/4;
 			this.weapon.y2 = this.y1 + this.weapon.length/2;
 		}
 		else {
-			this.weapon.x1 = this.x1 - this.weapon.thickness;
+			this.weapon.x1 = this.x1 - this.weapon.thickness*3/4;
 			this.weapon.y1 = this.y2 - this.weapon.length/2;
 			this.weapon.x2 = this.x1 + this.weapon.thickness/4;
 			this.weapon.y2 = this.y2 + this.weapon.length/2;
@@ -629,6 +678,7 @@ class Bullet {
 			//if there is a collision or the bullet leaves the canvas,
 			//remove the bullet from the game
 			if (coll || this.x1 <= 0 || this.x2 >= canvas.width || this.x2 >= this.startX+this.range) {
+				
 				//if it hit a monster, then have the monster take damage
 				if (coll && coll.type === "monster") {
 					coll.takeDamage(this);
