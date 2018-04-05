@@ -6,7 +6,7 @@
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
 
-const availableWeapons = ['new Weapon("uzi",1,10,20,2,10,canvas.width/2','new Weapon("shotgun",3,1,10,3.5,11,canvas.width/4'];
+const availableWeapons = ['new Weapon("uzi",1,10,30,2,10,canvas.width/2,120','new Weapon("shotgun",3,2,10,3.5,11,canvas.width/4,50'];
 
 //const availableWeapons = ['uzi','shotgun'];
 
@@ -15,24 +15,35 @@ const game = {
 	monsters: [],
 	mHeight: 12,
 	mWidth: 12,
-	mhits: 2,      //monster hit points
-	mspeed: 0.5,
+	mHits: 2,      //monster hit points
+	mNum: 3,
+	mSpeed: 0.5,
+	bossW: 16,
+	bossH: 16,
+	bossS: 0.7,
+	bossHit: 5,
 	objects: [],   //walls and columns
 	players: [],
 	bullets: [],
 	weapons: [],
-	generateMonsters(amount,speed) {
+	round: 1,
+	generateMonsters(speed) {
+		let amount = this.mNum;
 		let h = this.mHeight;
 		let w = this.mWidth;
 		let monster = {};
-		for (let i = 1; i <= amount; i++) {
+		let row = 2;
+		for (let i = 1; i <= this.mNum; i++) {
+			if (i%5 === 0) {
+				row+=2;
+			}
 			//speed - pixels to move about 60 times per second
 			//x1 - x coordinate of the top left corner of the monster
 			//y1 - y coordinate of the top left corner of the monster
 			//width - width of the monster
 			//height - height of the monster
 			//hits - hit points for the monster
-			monster = new Monster((i-1),this.mspeed,(canvas.width - w*2),(canvas.height/(amount+1)*i - h/2),w,h,this.mhits);
+			monster = new Monster(this.mSpeed,(canvas.width + w*row),(canvas.height/(amount+1)*i - h/2),w,h,this.mHits,"#0f0");
 			this.monsters.push(monster);
 
 			//Start moving the monsters
@@ -52,6 +63,8 @@ const game = {
 		}
 	},
 	generateWeapons() {
+		clearTimeout(game.wTime);
+		game.weapons = [];
 		let wX = 0; //weapon x
 		let wY = 0; //weapon y
 		let weapon = {};
@@ -66,7 +79,20 @@ const game = {
 			}
 			let coordStr = ','+wX+','+wY+')'
 			eval("weapon = " + availableWeapons[i%availableWeapons.length] + coordStr);
+			
 			this.weapons.push(weapon);
+		}
+		game.wTime = setTimeout(this.generateWeapons.bind(this),60000);
+	},
+	buffMonsters() {
+		this.mHits++;
+		this.bossHit+=2;
+		this.mNum *= 2;
+		if (this.round%5 === 0) {
+			this.mSpeed += 0.1;
+			for (let i = 0; i < this.round/5; i++) {
+				this.monsters.push(new Monster(this.bossS,canvas.width/2,((i%2)*canvas.height-((-1)*(i%2))*20),this.bossW,this.bossH,this.bossHit,"#f00"));
+			}
 		}
 	},
 	checkCollision(obj) {
@@ -92,9 +118,12 @@ const game = {
 				return bullet;
 			}
 		}
-		for (let weapon of this.weapons) {
-			if (isInside(obj,weapon)) {
-				return weapon;
+
+		if (obj.type === "player") {
+			for (let weapon of this.weapons) {
+				if (isInside(obj,weapon)) {
+					return weapon;
+				}
 			}
 		}
 
@@ -222,8 +251,9 @@ const game = {
 class Player {
 	constructor(name,x1,y1,width,height) {
 		//start with a weapon that does 1 damage
-		this.weapon = new Weapon("pistol",1,1,Infinity,2,5,canvas.width/2,0,0);
+		this.weapon = new Weapon("pistol",1,2,Infinity,2,5,canvas.width/2,Infinity,0,0);
 		this.name = name;
+		this.type = "player";
 		this.width = width;
 		this.height = height;
 		this.x1 = x1;
@@ -425,6 +455,17 @@ class Player {
 		}
 	}
 	pickUpWeapon(weapon) {
+		for (let weap of this.inventory) {
+			if (weap.name === weapon.name) {
+				weap.ammo += weapon.ammo;
+				if (weap.ammo > weap.maxAmmo) {
+					weap.ammo = weap.maxAmmo;
+				}
+				weapon.remove();
+				return;
+			}
+		}
+
 		this.inventory.push(weapon);
 		weapon.remove();
 	}
@@ -439,7 +480,7 @@ class Player {
 }
 
 class Weapon {
-	constructor(name,damage,firerate,ammo,thickness=1,length=5,range,x1,y1) {
+	constructor(name,damage,firerate,ammo,thickness=1,length=5,range,maxAmmo,x1,y1) {
 		this.name = name;
 		this.type = "weapon";
 		this.damage = damage;
@@ -448,10 +489,13 @@ class Weapon {
 		this.fr = firerate;
 		this.firing = false;
 		this.ammo = ammo;
+		this.maxAmmo = maxAmmo;
+		this.range = range;
+
+		//size and position
 		this.width = length;
 		this.height = thickness;
 		this.thickness = thickness;
-		this.range = range;
 		this.x1 = x1;
 		this.y1 = y1;
 		this.x2 = x1 + this.width;
@@ -635,10 +679,10 @@ class Wall {
 }
 
 class Monster {
-	constructor(number,speed,x1,y1,width,height,hits) {
-		this.number = number;
+	constructor(speed,x1,y1,width,height,hits,color) {
 		this.type = "monster";
 		this.speed = speed;
+		this.color = color;
 
 		//set the monster's location
 		this.x1 = x1;
@@ -795,7 +839,7 @@ class Monster {
 		ctx.beginPath()
 		ctx.rect(this.x1,this.y1,this.width,this.height);
 		//make them green
-		ctx.fillStyle = "#0f0";
+		ctx.fillStyle = this.color;
 		ctx.fill();
 	}
 	calcNearPlayer() {
@@ -1018,31 +1062,54 @@ function gameOver() {
 }
 
 function winGame() {
-	//end the game with a win
+	
+	if (game.round === 10) {
+		
+		//write "You win!" to the canvas
+		ctx.clearRect(0,0,canvas.width,canvas.height);
+		ctx.beginPath();
+		ctx.fillStyle = "#000000";
+		ctx.font = "30px Georgia";
+		ctx.fillText("You win!",270,300);
 
-	//game.over will tell the game to stop moving
-	game.over = true;
+		//end the game with a win
+		//game.over will tell the game to stop moving
+		game.over = true;
+	}
+	else {
+		game.round++;
+	
+		game.buffMonsters();
 
-	//write "You win!" to the canvas
-	ctx.clearRect(0,0,canvas.width,canvas.height);
-	ctx.beginPath();
-	ctx.fillStyle = "#000000";
-	ctx.font = "30px Georgia";
-	ctx.fillText("You win!",270,300);
+		game.generateMonsters();
+		game.generateWeapons();
+	}
+	
 }
 
 // ------------------------
 // Code to Start the Game
 // ------------------------
+$('#container div').on('click',(e) => {
+	let players = 2;
 
-//generate 2 players
-game.generatePlayers(2);
+	if ($(e.currentTarget).text() === "1 Player") {
+		players = 1;
+	}
 
-//generate 3 monsters and start everything moving
-game.generateMonsters(3);
+	$('#container div').toggleClass('hidden');
 
-//generate weapons
-game.generateWeapons();
+	$('#map').toggleClass('hidden');
+	//generate 2 players
+	game.generatePlayers(players);
+
+	//generate 3 monsters and start everything moving
+	game.generateMonsters();
+
+	//generate weapons
+	game.generateWeapons();
+})
+
 
 // -------------------------
 // Listeners for Key Presses

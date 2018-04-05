@@ -7,9 +7,32 @@
 	display: flex;
 	flex-direction: row;
 	justify-content: space-around;
+	height: 95vh;
 }
 
-header {
+.hidden {
+	display: none;
+}
+
+#container div {
+	vertical-align: middle;
+	text-align: center;
+	padding: 9vh 1vw;
+	margin: auto 5px;
+	height: 10vh;
+	width: 40vw;
+	background-color: grey;
+	border: 2px solid rgba(0,0,0,0.7);
+	font-size: 7vh;
+	cursor: pointer;
+	border-radius: 5px;
+}
+
+#container div:hover {
+	border: 2px solid #00FFFF;
+}
+
+/*header {
 	margin: 0 auto;
 	width: 654px;
 	background-color: blue; 
@@ -19,4 +42,4 @@ h1 {
 	margin: 1px auto;
 	text-align: center;
 	font-size: 24px;
-}
+}*/
