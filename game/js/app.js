@@ -6,9 +6,9 @@
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
 
-const availableWeapons = ['new Weapon("uzi",1,10,30,2,10,canvas.width/2,120','new Weapon("shotgun",3,2,10,3.5,11,canvas.width/4,50'];
-
-//const availableWeapons = ['uzi','shotgun'];
+const availableWeapons = ['"uzi",1,10,30,2,10,canvas.width/2,120,false',
+						'"shotgun",3,2,10,3.5,11,canvas.width/4,50,false',
+						'"rocket",10,1,3,5,17,canvas.width,6,true'];
 
 //The game object stores all objects in the game and functions for generating and drawing them
 const game = {
@@ -26,7 +26,8 @@ const game = {
 	players: [],
 	bullets: [],
 	weapons: [],
-	round: 1,
+	explosions: [],
+	round: 5,
 	generateMonsters(speed) {
 		let amount = this.mNum;
 		let h = this.mHeight;
@@ -68,19 +69,32 @@ const game = {
 		let wX = 0; //weapon x
 		let wY = 0; //weapon y
 		let weapon = {};
-		for (let i = 0; i < 4; i++) {
+		for (let i = 0; i < 5; i++) {
 			wX = canvas.width/26
-			if (i === 1 || i === 2) {
+			if (i === 1 || i === 3) {
 				wX += (canvas.height/26)*24;
 			} 
 			wY = canvas.height/26;
-			if (i >= 2) {
+			if (i >= 3) {
 				wY += canvas.height*24/26;
 			}
+
 			let coordStr = ','+wX+','+wY+')'
-			eval("weapon = " + availableWeapons[i%availableWeapons.length] + coordStr);
-			
-			this.weapons.push(weapon);
+			eval("weapon = new Weapon(" + availableWeapons[i%availableWeapons.length] + coordStr);
+
+			if (weapon.name === "rocket") {
+				if (game.round%5 === 0) {
+					weapon.x1 = (canvas.width - weapon.length)/2;
+					weapon.y1 = (canvas.height - weapon.thickness)/2;
+					weapon.x2 = weapon.x1 + weapon.width;
+					weapon.y2 = weapon.y1 + weapon.height;
+
+					this.weapons.push(weapon);
+				}
+			}
+			else {
+				this.weapons.push(weapon);
+			}
 		}
 		game.wTime = setTimeout(this.generateWeapons.bind(this),60000);
 	},
@@ -113,9 +127,18 @@ const game = {
 				return monster;
 			}
 		}
-		for (let bullet of this.bullets) {
-			if (isInside(obj,bullet)) {
-				return bullet;
+
+		if (obj.type === "monster") {
+			for (let bullet of this.bullets) {
+				if (isInside(obj,bullet)) {
+					return bullet;
+				}
+			}
+
+			for (let explosion of this.explosions) {
+				if (isInside(obj,explosion)) {
+					return explosion;
+				}
 			}
 		}
 
@@ -131,9 +154,24 @@ const game = {
 	},
 	draw() {
 		//draw all of the objects in the game
+		
+		//draw explosions
+		for (let explosion of this.explosions) {
+			explosion.draw();
+		}
 
 		//draw the walls and columns on the map
 		this.drawMap();
+
+		//draw bullets that have been fired
+		for (let bullet of this.bullets) {
+			bullet.draw();
+		}
+
+		//draw weapons
+		for (let weapon of this.weapons) {
+			weapon.draw();
+		}
 
 		//draw the players
 		for (let player of this.players) {
@@ -143,15 +181,6 @@ const game = {
 		//draw the monsters
 		for (let monster of this.monsters) {
 			monster.draw();
-		}
-
-		//draw bullets that have been fired
-		for (let bullet of this.bullets) {
-			bullet.draw();
-		}
-
-		for (let weapon of this.weapons) {
-			weapon.draw();
 		}
 	},
 	move() {
@@ -480,7 +509,7 @@ class Player {
 }
 
 class Weapon {
-	constructor(name,damage,firerate,ammo,thickness=1,length=5,range,maxAmmo,x1,y1) {
+	constructor(name,damage,firerate,ammo,thickness=1,length=5,range,maxAmmo,explosive,x1,y1) {
 		this.name = name;
 		this.type = "weapon";
 		this.damage = damage;
@@ -491,6 +520,7 @@ class Weapon {
 		this.ammo = ammo;
 		this.maxAmmo = maxAmmo;
 		this.range = range;
+		this.exp = explosive;
 
 		//size and position
 		this.width = length;
@@ -529,16 +559,16 @@ class Weapon {
 		if (this.dir === "right") {
 			//create a bullet starting at the tip of the weapon
 			//the bullet will have the same damage as the weapon
-			new Bullet(this.x2,this.y1,"right",this.damage,this.thickness,this.range);
+			new Bullet(this.x2,this.y1,"right",this.damage,this.thickness,this.range,this.exp);
 		}
 		else if (this.dir === "left") {
-			new Bullet((this.x1-this.thickness-1),this.y1,"left",this.damage,this.thickness,this.range);
+			new Bullet((this.x1-this.thickness-1),this.y1,"left",this.damage,this.thickness,this.range,this.exp);
 		}
 		else if (this.dir === "up") {
-			new Bullet(this.x1,(this.y1-this.thickness-1),"up",this.damage,this.thickness,this.range);
+			new Bullet(this.x1,(this.y1-this.thickness-1),"up",this.damage,this.thickness,this.range,this.exp);
 		}
 		else {
-			new Bullet(this.x2,this.y2,"down",this.damage,this.thickness,this.range);
+			new Bullet(this.x2,this.y2,"down",this.damage,this.thickness,this.range,this.exp);
 		}
 
 		//stop firing after an amount of time (1 second divided by the firerate)
@@ -556,7 +586,7 @@ class Weapon {
 }
 
 class Bullet {
-	constructor(x1,y1,dir,damage,width,range) {
+	constructor(x1,y1,dir,damage,width,range,explosive) {
 		//set size and position
 		if (width < 2) {
 			width = 2;
@@ -577,6 +607,7 @@ class Bullet {
 		this.speed = 10;
 		this.damage = damage;
 		this.type = "bullet";
+		this.exp = explosive;
 
 		//add the bullet to the game
 		game.bullets.push(this);
@@ -658,8 +689,53 @@ class Bullet {
 		ctx.fill();
 	}
 	remove() {
+		if (this.exp) {
+			this.explode();
+		}
 		//remove the bullet from the game's array of bullets
 		game.bullets = game.bullets.filter(((elem) => {
+			if (elem !== this) return true;
+		}).bind(this));
+	}
+	explode() {
+		new Explosion(this.damage,this.x1+this.width/2,this.y1+this.height/2);
+	}
+}
+
+class Explosion {
+	constructor(damage,x1,y1) {
+		this.damage = damage;
+		this.size = 30;
+		this.x1 = x1 - this.size/2;
+		this.y1 = y1 - this.size/2;
+		this.color = "#FFA500";
+		this.type = "explosion";
+
+		this.int = setInterval(this.toggleColor.bind(this),200);
+		game.explosions.push(this);
+		setTimeout(this.remove.bind(this),1000);
+	}
+	draw() {
+		//draw the bullet
+		ctx.beginPath()
+		ctx.rect(this.x1,this.y1,this.size,this.size);
+		//make it black
+		ctx.fillStyle = this.color;
+		ctx.fill();
+	}
+	toggleColor() {
+		if (this.color === "#FFA500") {
+			this.color = "#DDDDDD";
+		}
+		else {
+			this.color = "#FFA500";
+		}
+	}
+	remove() {
+		clearInterval(this.int);
+
+		//remove the explosion from the game's array of explosions
+		game.explosions = game.explosions.filter(((elem) => {
 			if (elem !== this) return true;
 		}).bind(this));
 	}
@@ -730,7 +806,7 @@ class Monster {
 			if (coll) {
 				
 				//if the collision was with a bullet, take damage
-				if (coll.type === "bullet") {
+				if (coll.type === "bullet" || coll.type === "explosion") {
 					this.takeDamage(coll);
 
 					//remove the bullet from the game
@@ -762,7 +838,7 @@ class Monster {
 				return;
 			}
 			if (coll) {
-				if (coll.type === "bullet") {
+				if (coll.type === "bullet" || coll.type === "explosion") {
 					this.takeDamage(coll);
 					coll.remove();
 				}
@@ -788,7 +864,7 @@ class Monster {
 				return;
 			}
 			if (coll) {
-				if (coll.type === "bullet") {
+				if (coll.type === "bullet" || coll.type === "explosion") {
 					this.takeDamage(coll);
 					coll.remove();
 				}
@@ -813,7 +889,7 @@ class Monster {
 				return;
 			}
 			if (coll) {
-				if (coll.type === "bullet") {
+				if (coll.type === "bullet" || coll.type === "explosion") {
 					this.takeDamage(coll);
 					coll.remove();
 				}
@@ -864,9 +940,9 @@ class Monster {
 		//return the player with the smallest hypotenuse
 		return nearPlayer;
 	}
-	takeDamage(bullet) {
+	takeDamage(obj) {
 		//take damage from a bullet
-		this.hits-= bullet.damage;
+		this.hits-= obj.damage;
 
 		//if hit points are zero, remove the zombie from the game
 		if (this.hits <= 0) {
