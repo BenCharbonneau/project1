@@ -24,6 +24,7 @@ Players will win if they make it through round 10.
 
 ## Enhancement List
 
+Update the title screen with instructions and a background color/image
 Add a round counter so players know what round they're on.
 Add mines and explosive barrels
 Add friendly fire
