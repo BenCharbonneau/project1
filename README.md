@@ -33,3 +33,7 @@ Update the graphics
 ## The Challenge
 
 The most challenging feature of this game to implement was the monster movement. Monsters will continually chase the nearest player and will find the shortest distance around obstacles that come between them and the player.
+
+## The Tech
+
+This game runs using an HTML5 Canvas and JavaScript for the logic. The page layout and styling was done with HTML and CSS.
