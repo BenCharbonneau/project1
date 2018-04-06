@@ -1,17 +1,35 @@
-# project1
+# Project1 - Monster Shooter 2
 
-There will be two players
+This is a monster shooting game. 1 to 2 players navigate around the map fighting waves of monsters.
 
-They will work together to defeat waves of monsters
+## User Story
 
-They must navigate through the map (see wireframe) without getting touched by a monster
+There will be one to two players.
 
-They can shoot the monsters to defeat them
+They will work together to defeat waves.
 
-Monsters will have an increasing amount of hit points each round
+They must navigate through the map (see wireframe) without getting touched by a monster.
+The first player uses the arrow keys to move, shift to shoot and ? to change weapons.
+The second player uses WASD to move, q to shoot, and e to change weapons.
 
-The users must defeat all monsters to win a wave
+They can shoot the monsters to defeat them.
 
-If there's time I will implement weapons that do different amounts of damage and interact in different ways with the monsters (maybe area of effect or mines that can be placed).
+Monsters will have an increasing amount of hit points each round and there will be more monsters each round.
 
-Players will be able to see what wave they are on and how many monsters remain
+The users must defeat all monsters to win a wave.
+
+Players start with a pistol that does 1 damage but there are other weapons around the map that do different amounts of damage and some can shoot explosive bullets.
+
+Players will win if they make it through round 10.
+
+## Enhancement List
+
+Add a round counter so players know what round they're on.
+Add mines and explosive barrels
+Add friendly fire
+Add new maps
+Update the graphics
+
+## The Challenge
+
+The most challenging feature of this game to implement was the monster movement. Monsters will continually chase the nearest player and will find the shortest distance around obstacles that come between them and the player.
