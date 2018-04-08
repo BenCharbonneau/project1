@@ -1,3 +1,7 @@
+body {
+	margin: 0;
+}
+
 #map {
 	border: 2px solid black;
 	background-color:#DDDDDD;
@@ -7,7 +11,7 @@
 	display: flex;
 	flex-direction: row;
 	justify-content: space-around;
-	height: 95vh;
+	/*height: 95vh;*/
 }
 
 .hidden {
@@ -17,13 +21,12 @@
 #container div {
 	vertical-align: middle;
 	text-align: center;
-	padding: 9vh 1vw;
-	margin: auto 5px;
+	padding: 8vh 1vw;
 	height: 10vh;
 	width: 40vw;
 	background-color: grey;
 	border: 2px solid rgba(0,0,0,0.7);
-	font-size: 7vh;
+	font-size: 6vh;
 	cursor: pointer;
 	border-radius: 5px;
 }
@@ -32,14 +35,37 @@
 	border: 2px solid #00FFFF;
 }
 
-/*header {
-	margin: 0 auto;
-	width: 654px;
-	background-color: blue; 
+#title-screen {
+	height: 90vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
 }
 
 h1 {
-	margin: 1px auto;
+	margin: 0;
+	background-color: blue;
 	text-align: center;
-	font-size: 24px;
-}*/
+	font-size: 5vw;
+	padding: 2vw;
+}
+
+nav {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+	border-bottom: 2px red solid;
+}
+
+nav div {
+	font-size: 3vw;
+}
+
+#help p {
+	margin: 1vh 1vw;
+}
+
+
+
+
+

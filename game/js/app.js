@@ -1238,10 +1238,11 @@ function playAgain() {
 			$('#container div').off();
 			newGame();
 			$('#container div').toggleClass('hidden');
+			$('h1').toggleClass('hidden');
+			$('#help').toggleClass('hidden');
 			$('#map').toggleClass('hidden');
 		}
-	})
-		
+	})	
 }
 
 function newGame() {
@@ -1255,6 +1256,8 @@ function newGame() {
 		}
 
 		$('#container div').toggleClass('hidden');
+		$('h1').toggleClass('hidden');
+		$('#help').toggleClass('hidden');
 
 		$('#map').toggleClass('hidden');
 		//generate 2 players
@@ -1265,6 +1268,23 @@ function newGame() {
 
 		//generate weapons
 		game.generateWeapons();
+	})
+
+	$('nav div').on('click',(e) => {
+		let section = $(e.currentTarget).text().toLowerCase();
+		let helpSects = $('#content p');
+		let sect;
+		for (let i = 0; i < helpSects.length; i++) {
+			sect = helpSects.eq(i);
+			if (sect.attr('id') === section) {
+				sect.removeClass('hidden');
+			}
+			else {
+				if (!(sect.hasClass('hidden'))) {
+					sect.addClass('hidden');
+				}
+			}
+		}
 	})
 
 

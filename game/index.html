@@ -6,11 +6,29 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 	</head>
 	<body>
-		<!-- <header><h1>Monster Shooter for 2</h1></header> -->
-		<div id="container">
-			<div>1 Player</div>
-			<div>2 Players</div>
-			<canvas id="map" class="hidden" height="650" width="650"></canvas>
+		<div id="title-screen">
+			<h1>Monster Shooter 2</h1>
+			<div id="container">
+				<div>1 Player</div>
+				<div>2 Players</div>
+				<canvas id="map" class="hidden" height="650" width="650"></canvas>
+			</div>
+			<div id="help">
+				<nav>
+					<div>Controls</div>
+					<div>Instructions</div>
+					<div>Story</div>
+				</nav>
+				<div id="content">
+					<p id="controls">Player 1 - Arrow keys to move, ? to change weapons, and Shift to shoot.
+					<br>Player 2 - W,A,S, and D to move, E to change weapons, and Q to shoot</p>
+
+					<p id="instructions" class="hidden">Shoot all of the monsters (green squares) to finish each round. If either player gets hit by a monster, you will lose so avoid them at all costs. 
+					<br><br>Weapons (red lines) with different abilities will drop around the map. Walk over them to pick them up. They have limited ammunition so be sure to use them wisely. You'll need them to beat the game.</p>
+
+					<p id="story" class="hidden">Monsters have appeared on Earth. We don't know where they came from and we haven't gotten the chance to ask them. They're too busy destroying humanity to stop and have a nice chat. Saving the world wasn't a skill you listed on your resumé but you're all that's left. Destroy the monsters before they destroy us. Good luck!</p>
+				</div>
+			</div>
 		</div>
 		<script type="text/javascript" src="js/app.js"></script>
 	</body>
