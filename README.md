@@ -1,6 +1,6 @@
 # Project1 - Monster Shooter 2
 
-This is a monster shooting game. 1 to 2 players navigate around the map fighting waves of monsters.
+This is a monster shooting game. 1 to 2 players navigate around the map fighting waves of monsters. It can be accessed here: https://bencharbonneau.github.io/
 
 ## User Story
 
@@ -24,8 +24,9 @@ Players will win if they make it through round 10.
 
 ## Enhancement List
 
-Update the title screen with instructions and a background color/image
-Add a round counter so players know what round they're on.
+Add a background color/image
+Add a round counter so players know what round they're on
+Allow players to set the control keys
 Add mines and explosive barrels
 Add friendly fire
 Add new maps
