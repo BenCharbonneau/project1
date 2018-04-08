@@ -24,13 +24,13 @@ Players will win if they make it through round 10.
 
 ## Enhancement List
 
-Add a background color/image
-Add a round counter so players know what round they're on
-Allow players to set the control keys
-Add mines and explosive barrels
-Add friendly fire
-Add new maps
-Update the graphics
+Add a background color/image<br>
+Add a round counter so players know what round they're on<br>
+Allow players to set the control keys<br>
+Add mines and explosive barrels<br>
+Add friendly fire<br>
+Add new maps<br>
+Update the graphics<br>
 
 ## The Challenge
 
