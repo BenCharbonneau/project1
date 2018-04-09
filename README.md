@@ -1,6 +1,6 @@
 # Project1 - Monster Shooter 2
 
-This is a monster shooting game. 1 to 2 players navigate around the map fighting waves of monsters. It can be accessed here: https://bencharbonneau.github.io/
+This is a monster shooting game. 1 to 2 players navigate around the map fighting waves of monsters. It can be accessed here: https://bencharbonneau.github.io/project1/game/
 
 ## User Story
 
